@@ -13,8 +13,9 @@
 CRGB leds[NUM_LEDS];
 
 void setup() {
-  // Serial.begin(115200);
+  Serial.begin(115200);
   delay(1000);
+  Serial.println("setup()");
 
   // Uncomment/edit one of the following lines for your leds arrangement.
   // FastLED.addLeds<TM1803, DATA_PIN, RGB>(leds, NUM_LEDS);
@@ -46,7 +47,7 @@ void setup() {
 }
 
 void loop() {
-  // Serial.println("top of loop()");    
+  Serial.println("top of loop()");    
 
   // Turn the LED on, then pause
   leds[0] = CRGB::Red;

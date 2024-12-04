@@ -2,20 +2,6 @@
     "version": 4,
     "configurations": [
         {
-            "name": "Linux",
-            "compilerPath": "/usr/bin/clang-14",
-            "compilerArgs": [],
-            "intelliSenseMode": "linux-clang-x64",
-            "includePath": [
-                "${default}",
-                "/home/ck/Arduino/libraries/FastLED/src"
-            ],
-            "forcedInclude": [],
-            "cStandard": "c17",
-            "cppStandard": "c++14",
-            "defines": []
-        },
-        {
             "name": "Arduino",
             "compilerPath": "/home/ck/.arduino15/packages/SparkFun/tools/arm-none-eabi-gcc/8-2018-q4-major/bin/arm-none-eabi-g++",
             "compilerArgs": [
