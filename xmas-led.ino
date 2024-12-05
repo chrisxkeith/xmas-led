@@ -56,7 +56,7 @@ class OLEDWrapper {
       const int START_BASELINE = 20;
       int       baseLine = START_BASELINE;
   public:   
-    void setup_OLED() {
+    OLEDWrapper() {
       Wire.begin();
       delay(2000); // try to avoid u8g2.begin() failure.
       if (!myOLED.begin()) {
@@ -69,9 +69,9 @@ class OLEDWrapper {
       myOLED.erase();
       myOLED.display();
     }
-    void display(String s, uint8_t x, uint8_t y) {
+    void display(uint8_t x, uint8_t y, String s) {
       myOLED.setFont(QW_FONT_8X16);
-      myOLED.text(x, y, s.c_str());
+      myOLED.text(x, y, s.c_str(), COLOR_WHITE);
     }
     void endDisplay() {
       myOLED.display();
@@ -152,40 +152,6 @@ class App {
         }
       }
     }
-    void example() {
-      Wire.begin();
-
-      myOLED.begin();
-
-      myOLED.erase();
-
-      myOLED.setFont(QW_FONT_5X7);
-      myOLED.text(0,0,"01234567");
-
-      myOLED.setFont(QW_FONT_5X7);
-      myOLED.text(0,8,"ABCDabcd");
-
-      myOLED.setFont(QW_FONT_8X16);
-      myOLED.text(48,0,"ABcd");
-
-      myOLED.setFont(QW_FONT_8X16);
-      myOLED.text(48,13,"efGH");
-
-      myOLED.setFont(QW_FONT_7SEGMENT);
-      myOLED.text(80,0,"0123");
-
-      myOLED.setFont(QW_FONT_5X7);
-      myOLED.text(80,17,"ijkLMNO");
-
-      myOLED.setFont(QW_FONT_LARGENUM);
-      myOLED.text(0,16,"012");
-
-      myOLED.setFont(QW_FONT_31X48);
-      myOLED.text(36,27,"ABC");
-
-      myOLED.display();
-      }
-
   public:
     void setup() {
       delay(500); // power-up safety delay
@@ -194,13 +160,13 @@ class App {
       Wire.begin();
       FastLED.addLeds<APA102, DATA_PIN, CLOCK_PIN, BGR>(leds, NUM_LEDS);
       blankAll();
-      Utils::scanI2C();
+      // Utils::scanI2C();
+      randomSeed(analogRead(0));
       oledWrapper = new OLEDWrapper();
-      // Serial.println("before pixel().");
-      // oledWrapper->pixel(1, 1, COLOR_WHITE);
-      // oledWrapper->clear();
-      // oledWrapper->display(String("setup() finished."), 0, FONT_8X16_HEIGHT);
-      example();
+      oledWrapper->clear();
+      oledWrapper->display(0, 0, String("setup() finished."));
+      oledWrapper->display(0, FONT_8X16_HEIGHT, String(random(10000)));
+      oledWrapper->endDisplay();
       Serial.println("setup() finished.");
     }
     void loop() {
