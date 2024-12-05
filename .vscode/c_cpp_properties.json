@@ -26,6 +26,8 @@
                 "/home/ck/.arduino15/packages/SparkFun/hardware/apollo3/1.2.1/cores/arduino/ard_sup/ard_supers",
                 "/home/ck/.arduino15/packages/SparkFun/hardware/apollo3/1.2.1/cores/arduino",
                 "/home/ck/.arduino15/packages/SparkFun/hardware/apollo3/1.2.1/variants/redboard_artemis",
+                "/home/ck/.arduino15/packages/SparkFun/hardware/apollo3/1.2.1/libraries/Wire/src",
+                "/home/ck/Arduino/libraries/SparkFun_Qwiic_OLED_Arduino_Library/src",
                 "/home/ck/Arduino/libraries/FastLED/src",
                 "/home/ck/.arduino15/packages/SparkFun/hardware/apollo3/1.2.1/cores/arduino/am_sdk_ap3/mcu/apollo3",
                 "/home/ck/.arduino15/packages/SparkFun/hardware/apollo3/1.2.1/cores/arduino/am_sdk_ap3/mcu/apollo3/hal",
