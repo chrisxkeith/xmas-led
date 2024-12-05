@@ -7,7 +7,6 @@ class App {
     static const int      NUM_LEDS = 300;
     CRGB                  leds[NUM_LEDS] = {0};     // Software gamma mode.;
     bool                  doSpeedTest = false;
-    bool                  doIntensityTest = false;
     bool                  doRampTest = false;
     bool                  numLEDSToTry = 2;
 
@@ -22,27 +21,14 @@ class App {
     void rampTest() {
       // Draw a linear ramp of brightnesses to showcase the difference between
       // the HD and non-HD mode.
-      for (int i = 0; i < 10; i++) {
-          uint8_t brightness = map(i, 0, NUM_LEDS - 1, 0, 255);
+      const int NUM_TO_TEST = NUM_LEDS;
+      for (int i = 0; i < NUM_TO_TEST; i++) {
+          uint8_t brightness = map(i, 0, NUM_TO_TEST - 1, 0, 255);
           CRGB c(brightness, brightness, brightness);  // Just make a shade of white.
           leds[i] = c;
       }
       FastLED.show();  // All LEDs are now displayed.
       delay(8);  // Wait 8 milliseconds until the next frame.
-    }
-    void intensityTest() {
-      for (int i = 0; i < numLEDSToTry; i++) {
-        leds[i] = CRGB::White;
-        delay(10);
-      }
-      FastLED.show();
-      delay(2000);
-      for (int i = 0; i < numLEDSToTry; i++) {
-        leds[i] = CRGB::Black;
-        delay(10);
-      }
-      FastLED.show();
-      delay(2000);
     }
     void blankAll() {
       for (int i = 0; i < NUM_LEDS; i++) {
@@ -59,11 +45,6 @@ class App {
         } else if (teststr.equals("stopSpeedTest")) {
           doSpeedTest = false;
           blankAll();
-        } else if (teststr.equals("startIntensityTest")) {
-          doIntensityTest = true;
-        } else if (teststr.equals("stopIntensityTest")) {
-          doIntensityTest = false;
-          blankAll();
         } else if (teststr.equals("startRampTest")) {
           doRampTest = true;
         } else if (teststr.equals("stopRampTest")) {
@@ -75,7 +56,7 @@ class App {
           String msg("Unknown command: '");
           msg.concat(teststr);
           msg.concat("'. Expected one of startSpeedTest, stopSpeedTest, "
-                    "startIntensityTest, stopIntensityTest, startRampTest, stopRampTest, "
+                    "startRampTest, stopRampTest, "
                     "blankAll");
           Serial.println(msg);
         }
@@ -90,15 +71,8 @@ class App {
       blankAll();
     }
     void loop() {
-      if (doSpeedTest) {
-        speedTest();
-      }
-      if (doIntensityTest) {
-        intensityTest();
-      }
-      if (doRampTest) {
-        rampTest();
-      }
+      if (doSpeedTest) { speedTest(); }
+      if (doRampTest) { rampTest(); }
       checkSerial();
     }
 };
