@@ -43,9 +43,13 @@ class Utils {
 };
 
 #include <SparkFun_Qwiic_OLED.h> //http://librarymanager/All#SparkFun_Qwiic_OLED
+#include <res/qw_fnt_5x7.h>
 #include <res/qw_fnt_8x16.h>
+#include <res/qw_fnt_31x48.h>
+#include <res/qw_fnt_7segment.h>
 #include <res/qw_fnt_largenum.h>
-Qwiic1in3OLED u8g2; // 128x64
+
+Qwiic1in3OLED myOLED; // 128x64
 
 class OLEDWrapper {
   private:
@@ -55,22 +59,22 @@ class OLEDWrapper {
     void setup_OLED() {
       Wire.begin();
       delay(2000); // try to avoid u8g2.begin() failure.
-      if (!u8g2.begin()) {
+      if (!myOLED.begin()) {
         Serial.println("u8g2.begin() failed! Stopping. Try power down/up instead of just restart.");
         while (true) { ; }
       }
       clear();
     }
     void clear() {
-      u8g2.erase();
-      u8g2.display();
+      myOLED.erase();
+      myOLED.display();
     }
     void display(String s, uint8_t x, uint8_t y) {
-      u8g2.setFont(QW_FONT_8X16);
-      u8g2.text(x, y, s);
+      myOLED.setFont(QW_FONT_8X16);
+      myOLED.text(x, y, s.c_str());
     }
     void endDisplay() {
-      u8g2.display();
+      myOLED.display();
     }
     void shiftDisplay(int shiftAmount) {
         baseLine += shiftAmount;
@@ -79,7 +83,7 @@ class OLEDWrapper {
         }
     }
     void pixel(int x, int y, int color) {
-      u8g2.pixel(x, y, color);
+      myOLED.pixel(x, y, color);
     }
 };
 OLEDWrapper* oledWrapper = nullptr;
@@ -148,6 +152,39 @@ class App {
         }
       }
     }
+    void example() {
+      Wire.begin();
+
+      myOLED.begin();
+
+      myOLED.erase();
+
+      myOLED.setFont(QW_FONT_5X7);
+      myOLED.text(0,0,"01234567");
+
+      myOLED.setFont(QW_FONT_5X7);
+      myOLED.text(0,8,"ABCDabcd");
+
+      myOLED.setFont(QW_FONT_8X16);
+      myOLED.text(48,0,"ABcd");
+
+      myOLED.setFont(QW_FONT_8X16);
+      myOLED.text(48,13,"efGH");
+
+      myOLED.setFont(QW_FONT_7SEGMENT);
+      myOLED.text(80,0,"0123");
+
+      myOLED.setFont(QW_FONT_5X7);
+      myOLED.text(80,17,"ijkLMNO");
+
+      myOLED.setFont(QW_FONT_LARGENUM);
+      myOLED.text(0,16,"012");
+
+      myOLED.setFont(QW_FONT_31X48);
+      myOLED.text(36,27,"ABC");
+
+      myOLED.display();
+      }
 
   public:
     void setup() {
@@ -161,7 +198,9 @@ class App {
       oledWrapper = new OLEDWrapper();
       // Serial.println("before pixel().");
       // oledWrapper->pixel(1, 1, COLOR_WHITE);
+      // oledWrapper->clear();
       // oledWrapper->display(String("setup() finished."), 0, FONT_8X16_HEIGHT);
+      example();
       Serial.println("setup() finished.");
     }
     void loop() {
