@@ -78,6 +78,9 @@ class OLEDWrapper {
           baseLine = START_BASELINE;
         }
     }
+    void pixel(int x, int y, int color) {
+      u8g2.pixel(x, y, color);
+    }
 };
 OLEDWrapper* oledWrapper = nullptr;
 
@@ -156,6 +159,8 @@ class App {
       blankAll();
       Utils::scanI2C();
       oledWrapper = new OLEDWrapper();
+      // Serial.println("before pixel().");
+      // oledWrapper->pixel(1, 1, COLOR_WHITE);
       // oledWrapper->display(String("setup() finished."), 0, FONT_8X16_HEIGHT);
       Serial.println("setup() finished.");
     }
