@@ -52,9 +52,6 @@ class Utils {
 Qwiic1in3OLED myOLED; // 128x64
 
 class OLEDWrapper {
-  private:
-      const int START_BASELINE = 20;
-      int       baseLine = START_BASELINE;
   public:   
     OLEDWrapper() {
       Wire.begin();
@@ -69,18 +66,12 @@ class OLEDWrapper {
       myOLED.erase();
       myOLED.display();
     }
-    void display(uint8_t x, uint8_t y, String s) {
+    void addText(uint8_t x, uint8_t y, String s) {
       myOLED.setFont(QW_FONT_8X16);
       myOLED.text(x, y, s.c_str(), COLOR_WHITE);
     }
     void endDisplay() {
       myOLED.display();
-    }
-    void shiftDisplay(int shiftAmount) {
-        baseLine += shiftAmount;
-        if (baseLine > 63) {
-          baseLine = START_BASELINE;
-        }
     }
     void pixel(int x, int y, int color) {
       myOLED.pixel(x, y, color);
@@ -98,7 +89,6 @@ class App {
     CRGB                  leds[NUM_LEDS] = {0};     // Software gamma mode.;
     bool                  doSpeedTest = false;
     bool                  doRampTest = false;
-    bool                  numLEDSToTry = 2;
 
     void speedTest() {
       for (int i = 0; i < NUM_LEDS; i++) {
@@ -164,8 +154,8 @@ class App {
       randomSeed(analogRead(0));
       oledWrapper = new OLEDWrapper();
       oledWrapper->clear();
-      oledWrapper->display(0, 0, String("setup() finished."));
-      oledWrapper->display(0, FONT_8X16_HEIGHT, String(random(10000)));
+      oledWrapper->addText(0, 0, String("setup() finished."));
+      oledWrapper->addText(0, FONT_8X16_HEIGHT, String(random(10000)));
       oledWrapper->endDisplay();
       Serial.println("setup() finished.");
     }
