@@ -98,17 +98,14 @@ class OLEDWrapper {
 OLEDWrapper* oledWrapper = nullptr;
 
 #include <FastLED.h>
+const int      NUM_LEDS = 300;
+CRGB           leds[NUM_LEDS] = {0};     // Software gamma mode.
 
-class App {
-  private:
+class LEDStripWrapper {
+  public:
     static const uint8_t  DATA_PIN = 8;
     static const uint8_t  CLOCK_PIN = 10;
-    static const int      NUM_LEDS = 300;
-    CRGB                  leds[NUM_LEDS] = {0};     // Software gamma mode.;
-    bool                  doSpeedTest = false;
-    bool                  doRampTest = false;
-
-    void speedTest() {
+    static void speedTest() {
       Timer timer("speedTest()");
       for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = CRGB::White;
@@ -117,7 +114,7 @@ class App {
         FastLED.show();
       }
     }
-    void rampTest() {
+    static void rampTest() {
       Timer timer("rampTest()");
       // Draw a linear ramp of brightnesses to showcase the difference between
       // the HD and non-HD mode.
@@ -130,12 +127,19 @@ class App {
       FastLED.show();  // All LEDs are now displayed.
       delay(8);  // Wait 8 milliseconds until the next frame.
     }
-    void blankAll() {
+    static void blankAll() {
       for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = CRGB::Black;
         FastLED.show();
       }
     }
+};
+
+class App {
+  private:
+    bool                  doSpeedTest = false;
+    bool                  doRampTest = false;
+
     void checkSerial() {
       if (Serial.available() > 0) {
         String teststr = Serial.readString();  //read until timeout
@@ -144,14 +148,14 @@ class App {
           doSpeedTest = true;
         } else if (teststr.equals("stopSpeedTest")) {
           doSpeedTest = false;
-          blankAll();
+          LEDStripWrapper::blankAll();
         } else if (teststr.equals("startRampTest")) {
           doRampTest = true;
         } else if (teststr.equals("stopRampTest")) {
           doRampTest = false;
-          blankAll();
+          LEDStripWrapper::blankAll();
         } else if (teststr.equals("blankAll")) {
-          blankAll();
+          LEDStripWrapper::blankAll();
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
@@ -169,8 +173,8 @@ class App {
       Serial.begin(115200);
       Serial.println("setup() started.");
       Wire.begin();
-      FastLED.addLeds<APA102, DATA_PIN, CLOCK_PIN, BGR>(leds, NUM_LEDS);
-      blankAll();
+      FastLED.addLeds<APA102, LEDStripWrapper::DATA_PIN, LEDStripWrapper::CLOCK_PIN, BGR>(leds, NUM_LEDS);
+      LEDStripWrapper::blankAll();
       // Utils::scanI2C();
       randomSeed(analogRead(0));
       oledWrapper = new OLEDWrapper();
@@ -180,8 +184,8 @@ class App {
       oledWrapper->endDisplay();
     }
     void loop() {
-      if (doSpeedTest) { speedTest(); }
-      if (doRampTest) { rampTest(); }
+      if (doSpeedTest) { LEDStripWrapper::speedTest(); }
+      if (doRampTest) { LEDStripWrapper::rampTest(); }
       checkSerial();
     }
 };
