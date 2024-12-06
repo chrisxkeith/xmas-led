@@ -42,6 +42,24 @@ class Utils {
     }
 };
 
+class Timer {
+  private:
+    String        msg;
+    unsigned long start;
+  public:
+    Timer(String msg) {
+      this->msg = msg;
+      start = millis();
+    }
+    ~Timer() {
+      unsigned long ms = millis() - start;
+      String msg(ms);
+      msg.concat(" milliseconds for ");
+      msg.concat(this->msg);
+      Serial.println(msg);
+    }
+};
+
 #include <SparkFun_Qwiic_OLED.h> //http://librarymanager/All#SparkFun_Qwiic_OLED
 #include <res/qw_fnt_5x7.h>
 #include <res/qw_fnt_8x16.h>
@@ -91,6 +109,7 @@ class App {
     bool                  doRampTest = false;
 
     void speedTest() {
+      Timer timer("speedTest()");
       for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = CRGB::White;
         FastLED.show();
@@ -99,6 +118,7 @@ class App {
       }
     }
     void rampTest() {
+      Timer timer("rampTest()");
       // Draw a linear ramp of brightnesses to showcase the difference between
       // the HD and non-HD mode.
       const int NUM_TO_TEST = NUM_LEDS;
@@ -144,6 +164,7 @@ class App {
     }
   public:
     void setup() {
+      Timer timer("setup()");
       delay(500); // power-up safety delay
       Serial.begin(115200);
       Serial.println("setup() started.");
@@ -157,7 +178,6 @@ class App {
       oledWrapper->addText(0, 0, String("setup() finished."));
       oledWrapper->addText(0, FONT_8X16_HEIGHT, String(random(10000)));
       oledWrapper->endDisplay();
-      Serial.println("setup() finished.");
     }
     void loop() {
       if (doSpeedTest) { speedTest(); }
