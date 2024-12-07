@@ -91,9 +91,12 @@ class OLEDWrapper {
     void endDisplay() {
       myOLED.display();
     }
-    void pixel(int x, int y, int color) {
-      myOLED.pixel(x, y, color);
-    }
+    void bitmap(uint8_t x0, uint8_t y0, uint8_t *pBitmap, 
+                uint8_t bmp_width, uint8_t bmp_height) {
+      myOLED.erase();
+      myOLED.bitmap(x0, y0, pBitmap, bmp_width, bmp_height);
+      myOLED.display();
+    }    
 };
 OLEDWrapper* oledWrapper = nullptr;
 
@@ -133,16 +136,54 @@ class LEDStripWrapper {
         FastLED.show();
       }
     }
+    void bitmap(uint8_t x0, uint8_t y0, uint8_t *pBitmap, 
+                uint8_t bmp_width, uint8_t bmp_height) {
+      uint8_t total = bmp_width * bmp_height;
+      for (uint8_t i = 0; i < total; i++) {
+        if (pBitmap[x0 + y0 * bmp_width]) {
+          leds[i] = CRGB::White;
+        } else {
+          leds[i] = CRGB::Black;
+        }
+      }
+      FastLED.show();
+    }    
 };
 
 class App {
   private:
     bool                  doSpeedTest = false;
     bool                  doRampTest = false;
+    bool                  doBitmapTest = false;
 
+    void bitmapTest() {
+      uint8_t bits[16 * 16 + 1] = {
+        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+        1
+      };
+      oledWrapper->bitmap(0, 0, bits, 16, 16);
+      delay(2000);
+      oledWrapper->bitmap(0, 0, bits + 1, 16, 16);
+      delay(2000);
+    }
     void checkSerial() {
       if (Serial.available() > 0) {
-        String teststr = Serial.readString();  //read until timeout
+        String teststr = Serial.readString();  // read until timeout
         teststr.trim();                        // remove any \r \n whitespace at the end of the String
         if (teststr.equals("startSpeedTest")) {
           doSpeedTest = true;
@@ -154,13 +195,18 @@ class App {
         } else if (teststr.equals("stopRampTest")) {
           doRampTest = false;
           LEDStripWrapper::blankAll();
+        } else if (teststr.equals("startBitmapTest")) {
+          doBitmapTest = true;
+        } else if (teststr.equals("stopBitmapTest")) {
+          doBitmapTest = false;
+          oledWrapper->clear();
         } else if (teststr.equals("blankAll")) {
           LEDStripWrapper::blankAll();
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
           msg.concat("'. Expected one of startSpeedTest, stopSpeedTest, "
-                    "startRampTest, stopRampTest, "
+                    "startRampTest, stopRampTest, startBitmapTest, stopBitmapTest"
                     "blankAll");
           Serial.println(msg);
         }
@@ -184,8 +230,9 @@ class App {
       oledWrapper->endDisplay();
     }
     void loop() {
-      if (doSpeedTest) { LEDStripWrapper::speedTest(); }
-      if (doRampTest) { LEDStripWrapper::rampTest(); }
+      if (doSpeedTest)  { LEDStripWrapper::speedTest(); }
+      if (doRampTest)   { LEDStripWrapper::rampTest(); }
+      if (doBitmapTest) { bitmapTest(); }
       checkSerial();
     }
 };
