@@ -156,24 +156,23 @@ class App {
     bool                  doBitmapTest = false;
 
     void bitmapTest() {
-      const int HEIGHT = 16;
-      const int WIDTH = 16;
-      const int SIZE = HEIGHT * WIDTH / 8;
-      uint8_t bits1[SIZE] = {
-        0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
-        0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 
-      };
-      oledWrapper->bitmap(0, 0, bits1, 16, 16);
+      const uint8_t HEIGHT = 16;
+      const uint8_t WIDTH = 16;
+      const uint8_t SIZE = HEIGHT * WIDTH / 8;
+      uint8_t *bits1 = new uint8_t[SIZE];
+      for (uint8_t i = 0; i < SIZE; i++) {
+        if (i % 2 == 0) {
+          bits1[i] = 0xff;
+        } else {
+          bits1[i] = 0x00;
+        }
+      }
+      oledWrapper->bitmap(0, 0, bits1, WIDTH, HEIGHT);
       delay(2000);
-      uint8_t bits2[SIZE] = {
-        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
-        0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
-        0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA
-      };
-      oledWrapper->bitmap(0, 0, bits2, 16, 16);
+      for (uint8_t i = 0; i < SIZE; i++) {
+        bits1[i] = ~bits1[i];
+      }
+      oledWrapper->bitmap(0, 0, bits1, WIDTH, HEIGHT);
       delay(2000);
     }
     void checkSerial() {
