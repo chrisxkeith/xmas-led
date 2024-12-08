@@ -157,28 +157,24 @@ class App {
     bool                  doBitmapTest = false;
 
     void bitmapTest() {
-      uint8_t bits[16 * 16 + 1] = {
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1
+      const int HEIGHT = 16;
+      const int WIDTH = 16;
+      const int SIZE = HEIGHT * WIDTH / 8;
+      uint8_t bits1[SIZE] = {
+        0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 
       };
-      oledWrapper->bitmap(0, 0, bits, 16, 16);
+      oledWrapper->bitmap(0, 0, bits1, 16, 16);
       delay(2000);
-      oledWrapper->bitmap(0, 0, bits + 1, 16, 16);
+      uint8_t bits2[SIZE] = {
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+        0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA
+      };
+      oledWrapper->bitmap(0, 0, bits2, 16, 16);
       delay(2000);
     }
     void checkSerial() {
@@ -206,7 +202,7 @@ class App {
           String msg("Unknown command: '");
           msg.concat(teststr);
           msg.concat("'. Expected one of startSpeedTest, stopSpeedTest, "
-                    "startRampTest, stopRampTest, startBitmapTest, stopBitmapTest"
+                    "startRampTest, stopRampTest, startBitmapTest, stopBitmapTest, "
                     "blankAll");
           Serial.println(msg);
         }
@@ -222,11 +218,9 @@ class App {
       FastLED.addLeds<APA102, LEDStripWrapper::DATA_PIN, LEDStripWrapper::CLOCK_PIN, BGR>(leds, NUM_LEDS);
       LEDStripWrapper::blankAll();
       // Utils::scanI2C();
-      randomSeed(analogRead(0));
       oledWrapper = new OLEDWrapper();
       oledWrapper->clear();
       oledWrapper->addText(0, 0, String("setup() finished."));
-      oledWrapper->addText(0, FONT_8X16_HEIGHT, String(random(10000)));
       oledWrapper->endDisplay();
     }
     void loop() {
