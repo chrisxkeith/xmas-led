@@ -71,11 +71,15 @@ Qwiic1in3OLED myOLED; // 128x64
 
 class OLEDWrapper {
   public:   
-    OLEDWrapper() {
+    OLEDWrapper(bool stopOnFail) {
       Wire.begin();
       if (!myOLED.begin()) {
-        Serial.println("u8g2.begin() failed! Stopping. Try power down/up instead of just restart.");
-        while (true) { ; }
+        if (stopOnFail) {
+          Serial.println("u8g2.begin() failed! Stopping. Try power down/up instead of just restart.");
+          while (true) { ; }
+        } else {
+          Serial.println("u8g2.begin() failed! Continuing.");
+        }
       }
       clear();
     }
@@ -132,8 +136,8 @@ class LEDStripWrapper {
     static void blankAll() {
       for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = CRGB::Black;
-        FastLED.show();
       }
+      FastLED.show();
     }
     void bitmap(uint8_t x0, uint8_t y0, uint8_t *pBitmap, 
                 uint8_t bmp_width, uint8_t bmp_height) {
@@ -247,9 +251,12 @@ class App {
       Serial.println("setup() started.");
       Wire.begin();
       FastLED.addLeds<APA102, LEDStripWrapper::DATA_PIN, LEDStripWrapper::CLOCK_PIN, BGR>(leds, NUM_LEDS);
-      LEDStripWrapper::blankAll();
+      {
+        Timer t("LEDStripWrapper::blankAll()");
+        LEDStripWrapper::blankAll();
+      }
       // Utils::scanI2C();
-      oledWrapper = new OLEDWrapper();
+      oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
       oledWrapper->addText(0, 0, String("setup() finished."));
       oledWrapper->endDisplay();
