@@ -73,7 +73,6 @@ class OLEDWrapper {
   public:   
     OLEDWrapper() {
       Wire.begin();
-      delay(2000); // try to avoid u8g2.begin() failure.
       if (!myOLED.begin()) {
         Serial.println("u8g2.begin() failed! Stopping. Try power down/up instead of just restart.");
         while (true) { ; }
