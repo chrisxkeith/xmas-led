@@ -150,15 +150,17 @@ class LEDStripWrapper {
 };
 
 class App {
+  public:
+    uint8_t width = 16;
+    uint8_t height = 16;
+
   private:
     bool                  doSpeedTest = false;
     bool                  doRampTest = false;
     bool                  doBitmapTest = false;
 
     void bitmapTest() {
-      const uint8_t HEIGHT = 16;
-      const uint8_t WIDTH = 16;
-      const uint8_t SIZE = HEIGHT * WIDTH / 8;
+      const uint8_t SIZE = height * width / 8;
       uint8_t *bits1 = new uint8_t[SIZE];
       for (uint8_t i = 0; i < SIZE; i++) {
         if (i % 2 == 0) {
@@ -167,13 +169,42 @@ class App {
           bits1[i] = 0x00;
         }
       }
-      oledWrapper->bitmap(0, 0, bits1, WIDTH, HEIGHT);
+      oledWrapper->clear();
+      oledWrapper->bitmap(0, 0, bits1, width, height);
       delay(2000);
       for (uint8_t i = 0; i < SIZE; i++) {
         bits1[i] = ~bits1[i];
       }
-      oledWrapper->bitmap(0, 0, bits1, WIDTH, HEIGHT);
+      oledWrapper->bitmap(0, 0, bits1, width, height);
       delay(2000);
+      delete bits1;
+    }
+    void setWidthHeight(String s) {
+      int w;
+      int h;
+      int ret = sscanf(s.c_str(), "w,h=%d,%d", &w, &h);
+      width = w;
+      height = h;
+      if (ret != 2) {
+        String err("Error parsing: ");
+        err.concat(s);
+        err.concat(" (Expected w,h=[width],[height]) Parsed ");
+        err.concat(ret);
+        err.concat(" items");
+        Serial.println(err);
+      } else {
+        if (width % 8 != 0) {
+          width = ((width / 8) + 1) * 8;
+        }
+        if (height % 8 != 0) {
+          height = ((height / 8) + 1) * 8;
+        }
+        String msg("width = ");
+        msg.concat(width);
+        msg.concat(" , height = ");
+        msg.concat(height);
+        Serial.println(msg);
+      }
     }
     void checkSerial() {
       if (Serial.available() > 0) {
@@ -196,12 +227,14 @@ class App {
           oledWrapper->clear();
         } else if (teststr.equals("blankAll")) {
           LEDStripWrapper::blankAll();
+        } else if (teststr.startsWith("w,h=")) {
+          setWidthHeight(teststr);
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
           msg.concat("'. Expected one of startSpeedTest, stopSpeedTest, "
                     "startRampTest, stopRampTest, startBitmapTest, stopBitmapTest, "
-                    "blankAll");
+                    "blankAll, w,h=[width],[height]");
           Serial.println(msg);
         }
       }
