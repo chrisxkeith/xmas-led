@@ -166,15 +166,18 @@ class App {
     void bitmapTest() {
       const uint8_t SIZE = height * width / 8;
       uint8_t *bits1 = new uint8_t[SIZE];
-      for (uint8_t i = 0; i < SIZE; i++) {
-        if (i % 2 == 0) {
-          bits1[i] = 0xff;
-        } else {
-          bits1[i] = 0x00;
+      {
+        Timer t1("bitmapTest");
+        for (uint8_t i = 0; i < SIZE; i++) {
+          if (i % 2 == 0) {
+            bits1[i] = 0xff;
+          } else {
+            bits1[i] = 0x00;
+          }
         }
+        oledWrapper->clear();
+        oledWrapper->bitmap(0, 0, bits1, width, height);
       }
-      oledWrapper->clear();
-      oledWrapper->bitmap(0, 0, bits1, width, height);
       delay(2000);
       for (uint8_t i = 0; i < SIZE; i++) {
         bits1[i] = ~bits1[i];
