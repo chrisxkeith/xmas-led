@@ -104,7 +104,7 @@ class OLEDWrapper {
 OLEDWrapper* oledWrapper = nullptr;
 
 #include <FastLED.h>
-const int      NUM_LEDS = 300;
+const int      NUM_LEDS = 300 - 16;
 CRGB           leds[NUM_LEDS] = {0};     // Software gamma mode.
 
 class LEDStripWrapper {
