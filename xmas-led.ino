@@ -99,7 +99,7 @@ class OLEDWrapper {
       myOLED.erase();
       myOLED.bitmap(x0, y0, pBitmap, bmp_width, bmp_height);
       myOLED.display();
-    }    
+    }
 };
 OLEDWrapper* oledWrapper = nullptr;
 
@@ -162,6 +162,11 @@ class App {
     bool                  doSpeedTest = false;
     bool                  doRampTest = false;
     bool                  doBitmapTest = false;
+
+    String configs[4] = {
+      "~2024Dec10:15:45", // date +"%Y%b%d:%H:%M"
+      "https://github.com/chrisxkeith/xmas-led",
+    };
 
     void bitmapTest() {
       const uint8_t SIZE = height * width / 8;
@@ -261,8 +266,11 @@ class App {
       // Utils::scanI2C();
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
-      oledWrapper->addText(0, 0, String("setup() finished."));
+      oledWrapper->addText(0, 0, configs[0]);
+      oledWrapper->addText(0, FONT_8X16_HEIGHT, configs[1]);
       oledWrapper->endDisplay();
+      delay(4000);
+      oledWrapper->clear();
     }
     void loop() {
       if (doSpeedTest)  { LEDStripWrapper::speedTest(); }
