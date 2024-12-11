@@ -60,6 +60,56 @@ class Timer {
     }
 };
 
+#include <cstring>
+// 1 bit deep, e.g., monochrome
+class Bitmap {
+  private:
+    uint8_t   width;
+    uint8_t   height;
+  public:
+    uint8_t*  bitmap;
+    Bitmap(uint8_t width, uint8_t height) {
+      if (width % 8 != 0) {
+        width = ((width / 8) + 1) * 8;
+      }
+      if (height % 8 != 0) {
+        height = ((height / 8) + 1) * 8;
+      }
+      this->width = width;
+      this->height = height;
+      bitmap = new uint8_t[width * height / 8];
+      clear();
+    }
+    void clear() {
+      std::memset(bitmap, 0b0000, width * height / 8);
+    }
+    int calcIndex(uint8_t x,  uint8_t y) {
+      int i = x + y * width;
+      if (i >= width * height / 8) {
+        String err("x=");
+        err.concat(x);
+        err.concat(", y=");
+        err.concat(y);
+        err.concat(" out of bounds ");
+        err.concat(width);
+        err.concat(",");
+        err.concat("height");
+        Serial.println(err);
+        return 1;
+      }
+      return i;
+    }
+    void setBit(uint8_t x,  uint8_t y) {
+      byte* b = &bitmap[calcIndex(x, y)];
+      (*b) = (*b) & 1 << x;
+    }
+    int getBit(uint8_t x, uint8_t y) {
+      byte b = bitmap[calcIndex(x, y)];
+      bool bit = (b >> x) & 0x1;
+      return bit;
+    }
+};
+
 #include <SparkFun_Qwiic_OLED.h> //http://librarymanager/All#SparkFun_Qwiic_OLED
 #include <res/qw_fnt_5x7.h>
 #include <res/qw_fnt_8x16.h>
