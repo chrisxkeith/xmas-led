@@ -63,10 +63,9 @@ class Timer {
 #include <cstring>
 // 1 bit deep, e.g., monochrome
 class Bitmap {
-  private:
+  public:
     uint8_t   width;
     uint8_t   height;
-  public:
     uint8_t*  bitmap;
     Bitmap(uint8_t width, uint8_t height) {
       if (width % 8 != 0) {
@@ -77,15 +76,16 @@ class Bitmap {
       }
       this->width = width;
       this->height = height;
-      bitmap = new uint8_t[width * height / 8];
+      bitmap = new uint8_t[sizeInBytes()];
       clear();
     }
     void clear() {
-      std::memset(bitmap, 0b0000, width * height / 8);
+      std::memset(bitmap, 0b0000, sizeInBytes());
     }
+    int sizeInBytes() { return width * height / 8; }
     int calcIndex(uint8_t x,  uint8_t y) {
       int i = x + y * width;
-      if (i >= width * height / 8) {
+      if (i >= sizeInBytes() * 8) {
         String err("x=");
         err.concat(x);
         err.concat(", y=");
@@ -189,14 +189,23 @@ class LEDStripWrapper {
       }
       FastLED.show();
     }
-    void bitmap(uint8_t x0, uint8_t y0, uint8_t *pBitmap, 
-                uint8_t bmp_width, uint8_t bmp_height) {
-      uint8_t total = bmp_width * bmp_height;
-      for (uint8_t i = 0; i < total; i++) {
-        if (pBitmap[x0 + y0 * bmp_width]) {
-          leds[i] = CRGB::White;
-        } else {
-          leds[i] = CRGB::Black;
+    void showBitmap(Bitmap *pBitmap) {
+      int ledIndex = 0;
+      for (uint8_t x = 0; x < pBitmap->width; x++) {
+        for (uint8_t y = 0; y < pBitmap->height; y++) {
+          if (pBitmap->getBit(x, y)) {
+            leds[ledIndex++] = CRGB::White;
+          } else {
+            leds[ledIndex++] = CRGB::Black;
+          }
+        }
+        if (ledIndex >= NUM_LEDS) {
+          String err("Went beyond length of LED=");
+          err.concat(NUM_LEDS);
+          err.concat(" , ledIndex=");
+          err.concat(ledIndex);
+          Serial.println(err);
+          break;
         }
       }
       FastLED.show();
@@ -214,7 +223,7 @@ class App {
     bool                  doBitmapTest = false;
 
     String configs[4] = {
-      "~2024Dec10:15:45", // date +"%Y%b%d:%H:%M"
+      "~2024Dec10:16:49", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
