@@ -83,8 +83,8 @@ class Bitmap {
       std::memset(bitmap, 0b0000, sizeInBytes());
     }
     int sizeInBytes() { return width * height / 8; }
-    int calcIndex(uint8_t x,  uint8_t y) {
-      int i = x + y * width;
+    int calcByteIndex(uint8_t x, uint8_t y) {
+      int i = (x / 8) + (y * width / 8);
       if (i >= sizeInBytes() * 8) {
         String err("x=");
         err.concat(x);
@@ -100,13 +100,31 @@ class Bitmap {
       return i;
     }
     void setBit(uint8_t x,  uint8_t y) {
-      byte* b = &bitmap[calcIndex(x, y)];
-      (*b) = (*b) & 1 << x;
+      int i = calcByteIndex(x, y);
+      bitmap[i] = bitmap[i] | (1 << x);
+    }
+    void clearBit(uint8_t x,  uint8_t y) {
+      int i = calcByteIndex(x, y);
+      bitmap[i] = bitmap[i] & ~(1 << x);
     }
     int getBit(uint8_t x, uint8_t y) {
-      byte b = bitmap[calcIndex(x, y)];
+      byte b = bitmap[calcByteIndex(x, y)];
       bool bit = (b >> x) & 0x1;
       return bit;
+    }
+    void dump() {
+      String msg;
+      for (int y = 0; y < height; y++) {
+        msg.remove(0);
+        for (int x = 0; x < width / 8; x++) {
+          byte b = bitmap[calcByteIndex(x, y)];
+          for (int i = 7; i >= 0; i--) {
+            msg.concat((b >> i) & 1);
+          }
+          msg.concat(" ");
+        }
+        Serial.println(msg);
+      }
     }
 };
 
@@ -228,27 +246,38 @@ class App {
     };
 
     void bitmapTest() {
-      const uint8_t SIZE = height * width / 8;
-      uint8_t *bits1 = new uint8_t[SIZE];
+      Bitmap  bm(width, height);
       {
         Timer t1("bitmapTest");
-        for (uint8_t i = 0; i < SIZE; i++) {
-          if (i % 2 == 0) {
-            bits1[i] = 0xff;
-          } else {
-            bits1[i] = 0x00;
+        for (uint8_t x = 0; x < width; x++) {
+          for (uint8_t y = 0; y < height; y++) {
+            if (x % 2) {
+              if (y % 2) {
+                bm.setBit(x, y);
+              }
+            } else {
+              if (y % 2 == 0) {
+                bm.setBit(x, y);
+              }
+            }
           }
         }
+        // bm.dump();
         oledWrapper->clear();
-        oledWrapper->bitmap(0, 0, bits1, width, height);
+        oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
       }
       delay(2000);
-      for (uint8_t i = 0; i < SIZE; i++) {
-        bits1[i] = ~bits1[i];
+      for (uint8_t x = 0; x < width; x++) {
+        for (uint8_t y = 0; y < height; y++) {
+          if (bm.getBit(x, y)) {
+            bm.clearBit(x, y);
+          } else {
+            bm.setBit(x, y);
+          }
+        }
       }
-      oledWrapper->bitmap(0, 0, bits1, width, height);
+      oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
       delay(2000);
-      delete bits1;
     }
     void setWidthHeight(String s) {
       int w;
