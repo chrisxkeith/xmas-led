@@ -101,11 +101,11 @@ class Bitmap {
     }
     void setBit(uint8_t x,  uint8_t y) {
       int i = calcByteIndex(x, y);
-      bitmap[i] = bitmap[i] | (1 << x);
+      bitmap[i] |= (1 << x);
     }
     void clearBit(uint8_t x,  uint8_t y) {
       int i = calcByteIndex(x, y);
-      bitmap[i] = bitmap[i] & ~(1 << x);
+      bitmap[i] &= ~(1 << x);
     }
     int getBit(uint8_t x, uint8_t y) {
       byte b = bitmap[calcByteIndex(x, y)];
