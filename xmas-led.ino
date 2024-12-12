@@ -241,7 +241,7 @@ class App {
     bool                  doBitmapTest = false;
 
     String configs[4] = {
-      "~2024Dec10:16:49", // date +"%Y%b%d:%H:%M"
+      "~2024Dec12:10:52", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
@@ -262,7 +262,6 @@ class App {
             }
           }
         }
-        // bm.dump();
         oledWrapper->clear();
         oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
       }
@@ -272,6 +271,16 @@ class App {
           if (bm.getBit(x, y)) {
             bm.clearBit(x, y);
           } else {
+            bm.setBit(x, y);
+          }
+        }
+      }
+      oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
+      delay(2000);
+      bm.clear();
+      for (uint8_t x = 0; x < width; x++) {
+        for (uint8_t y = 0; y < height; y++) {
+          if (x == y) {
             bm.setBit(x, y);
           }
         }
@@ -355,7 +364,6 @@ class App {
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
       oledWrapper->addText(0, 0, configs[0]);
-      oledWrapper->addText(0, FONT_8X16_HEIGHT, configs[1]);
       oledWrapper->endDisplay();
       delay(4000);
       oledWrapper->clear();
