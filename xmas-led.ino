@@ -287,6 +287,18 @@ class App {
       }
       oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
       delay(2000);
+      bm.clear();
+      for (uint8_t y = 0; y < height; y++) {
+        bm.setBit(0, y);
+      }
+      oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
+      delay(2000);
+      bm.clear();
+      for (uint8_t x = 0; x < width; x++) {
+        bm.setBit(x, 0);
+      }
+      oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
+      delay(2000);
     }
     void setWidthHeight(String s) {
       int w;
