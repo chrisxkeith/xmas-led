@@ -112,7 +112,8 @@ class Bitmap {
       bool bit = (b >> x) & 0x1;
       return bit;
     }
-    void dump() {
+    void dump(String title) {
+      Serial.println(title);
       String msg;
       for (int y = 0; y < height; y++) {
         msg.remove(0);
@@ -253,6 +254,7 @@ static uint8_t bmp_truck_data[] = {
     0x81,
     0x01,
     0xFF,
+    
     0xFF,
     0x80,
     0x83,
@@ -294,7 +296,7 @@ class App {
     }
     void bitmapTest() {
       Bitmap  bm(width, height);
-/*      {
+      {
         Timer t1("bitmapTest");
         for (uint8_t x = 0; x < width; x++) {
           for (uint8_t y = 0; y < height; y++) {
@@ -309,9 +311,8 @@ class App {
             }
           }
         }
-        oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
       }
-      delay(2000);
+      bm.dump("checkerboad");
       for (uint8_t x = 0; x < width; x++) {
         for (uint8_t y = 0; y < height; y++) {
           if (bm.getBit(x, y)) {
@@ -321,41 +322,27 @@ class App {
           }
         }
       }
-      oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
-      delay(2000);
+      bm.dump("reverse checkerboad");
       bm.clear();
-  */    for (uint8_t x = 0; x < width; x++) {
+    for (uint8_t x = 0; x < width; x++) {
         for (uint8_t y = 0; y < height; y++) {
           if (x == y) {
             bm.setBit(x, y);
           }
         }
       }
-      // bm.dump();
-      oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
-      delay(1000 * 60);
-/*      bm.clear();
-      for (uint8_t x = 0; x < width; x++) {
-        for (uint8_t y = 0; y < height; y++) {
-          if (x > y) {
-            bm.setBit(x, y);
-          }
-        }
-      }
-      oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
-      delay(2000);
+      bm.dump("diagonal");
       bm.clear();
       for (uint8_t x = 0; x < width; x++) {
-        for (uint8_t y = 0; y < height; y++) {
-          if (x < y) {
-            bm.setBit(x, y);
-          }
-        }
+          bm.setBit(x, 0);
       }
-      oledWrapper->clear();
-      oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
-      delay(2000);
- */   }
+      bm.dump("horizontal");
+      bm.clear();
+      for (uint8_t y = 0; y < height; y++) {
+        bm.setBit(0, y);
+      }
+      bm.dump("vertical");
+    }
     void setWidthHeight(String s) {
       int w;
       int h;
@@ -397,11 +384,8 @@ class App {
         } else if (teststr.equals("stopRampTest")) {
           doRampTest = false;
           LEDStripWrapper::blankAll();
-        } else if (teststr.equals("startBitmapTest")) {
-          doBitmapTest = true;
-        } else if (teststr.equals("stopBitmapTest")) {
-          doBitmapTest = false;
-          oledWrapper->clear();
+        } else if (teststr.equals("runBitmapTest")) {
+          bitmapTest();
         } else if (teststr.equals("blankAll")) {
           LEDStripWrapper::blankAll();
         } else if (teststr.startsWith("w,h=")) {
@@ -410,7 +394,7 @@ class App {
           String msg("Unknown command: '");
           msg.concat(teststr);
           msg.concat("'. Expected one of startSpeedTest, stopSpeedTest, "
-                    "startRampTest, stopRampTest, startBitmapTest, stopBitmapTest, "
+                    "startRampTest, stopRampTest, runBitmapTest, "
                     "blankAll, w,h=[width],[height]");
           Serial.println(msg);
         }
