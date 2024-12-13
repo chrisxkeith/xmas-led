@@ -230,6 +230,50 @@ class LEDStripWrapper {
     }    
 };
 
+#define BMP_TRUCK_WIDTH  19
+#define BMP_TRUCK_HEIGHT 16
+
+static uint8_t bmp_truck_data[] = {
+    0xFF,
+    0x01,
+    0xC1,
+    0x41,
+    0x41,
+    0x41,
+    0x71,
+    0x11,
+    0x11,
+    0x11,
+    0x11,
+    0x11,
+    0x71,
+    0x41,
+    0x41,
+    0xC1,
+    0x81,
+    0x01,
+    0xFF,
+    0xFF,
+    0x80,
+    0x83,
+    0x82,
+    0x86,
+    0x8F,
+    0x8F,
+    0x86,
+    0x82,
+    0x82,
+    0x82,
+    0x86,
+    0x8F,
+    0x8F,
+    0x86,
+    0x83,
+    0x81,
+    0x80,
+    0xFF,
+}; // 38 bytes
+
 class App {
   public:
     uint8_t width = 16;
@@ -245,9 +289,12 @@ class App {
       "https://github.com/chrisxkeith/xmas-led",
     };
 
+    void truckTest() {
+      oledWrapper->bitmap(0, 0, bmp_truck_data, BMP_TRUCK_WIDTH, BMP_TRUCK_HEIGHT);
+    }
     void bitmapTest() {
       Bitmap  bm(width, height);
-      {
+/*      {
         Timer t1("bitmapTest");
         for (uint8_t x = 0; x < width; x++) {
           for (uint8_t y = 0; y < height; y++) {
@@ -262,7 +309,6 @@ class App {
             }
           }
         }
-        oledWrapper->clear();
         oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
       }
       delay(2000);
@@ -278,9 +324,20 @@ class App {
       oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
       delay(2000);
       bm.clear();
-      for (uint8_t x = 0; x < width; x++) {
+  */    for (uint8_t x = 0; x < width; x++) {
         for (uint8_t y = 0; y < height; y++) {
           if (x == y) {
+            bm.setBit(x, y);
+          }
+        }
+      }
+      // bm.dump();
+      oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
+      delay(1000 * 60);
+/*      bm.clear();
+      for (uint8_t x = 0; x < width; x++) {
+        for (uint8_t y = 0; y < height; y++) {
+          if (x > y) {
             bm.setBit(x, y);
           }
         }
@@ -288,18 +345,17 @@ class App {
       oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
       delay(2000);
       bm.clear();
-      for (uint8_t y = 0; y < height; y++) {
-        bm.setBit(0, y);
-      }
-      oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
-      delay(2000);
-      bm.clear();
       for (uint8_t x = 0; x < width; x++) {
-        bm.setBit(x, 0);
+        for (uint8_t y = 0; y < height; y++) {
+          if (x < y) {
+            bm.setBit(x, y);
+          }
+        }
       }
+      oledWrapper->clear();
       oledWrapper->bitmap(0, 0, bm.bitmap, width, height);
       delay(2000);
-    }
+ */   }
     void setWidthHeight(String s) {
       int w;
       int h;
