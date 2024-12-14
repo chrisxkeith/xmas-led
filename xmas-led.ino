@@ -69,7 +69,7 @@ class Bitmap {
     int       width;
     int       height;
     uint8_t*  bitmap;
-    Bitmap(uint8_t width, uint8_t height) {
+    Bitmap(int width, int height) {
       if (width % 8 != 0) {
         width = ((width / 8) + 1) * 8;
       }
@@ -101,15 +101,15 @@ class Bitmap {
       }
       return i;
     }
-    void setBit(uint8_t x,  uint8_t y) {
+    void setBit(int x,  int y) {
       int i = calcByteIndex(x, y);
-      bitmap[i] |= (1 << ( 7 - x));
+      bitmap[i] |= (1 << (7 - (x % 8)));
     }
-    void clearBit(uint8_t x,  uint8_t y) {
+    void clearBit(int x,  int y) {
       int i = calcByteIndex(x, y);
-      bitmap[i] &= ~(1 << (7 - x));
+      bitmap[i] &= ~(1 << (7 - (x % 8)));
     }
-    int getBit(uint8_t x, uint8_t y) {
+    int getBit(int x, int y) {
       byte b = bitmap[calcByteIndex(x, y)];
       bool bit = (b >> x) & 0x1;
       return bit;
@@ -122,7 +122,9 @@ class Bitmap {
         for (int x = 0; x < width; x += 8) {
           byte b = bitmap[calcByteIndex(x, y)];
           for (int i = 7; i >= 0; i--) {
-            msg.concat((b >> i) & 1);
+            int bit = (b >> i) & 1;
+            char c = (bit ? '1' : '.');
+            msg.concat(c);
           }
           msg.concat(" ");
         }
@@ -158,7 +160,7 @@ class OLEDWrapper {
       myOLED.erase();
       myOLED.display();
     }
-    void addText(uint8_t x, uint8_t y, String s) {
+    void addText(int x, int y, String s) {
       myOLED.setFont(QW_FONT_8X16);
       myOLED.text(x, y, s.c_str(), COLOR_WHITE);
     }
@@ -167,8 +169,8 @@ class OLEDWrapper {
     }
     // Must convert to OLED bitmap format: vertical bytes, left-to-right, top-to-bottom
     // Least-significant bit of first byte == (0,0).
-    void bitmap(uint8_t x0, uint8_t y0, uint8_t *pBitmap, 
-                uint8_t bmp_width, uint8_t bmp_height) {
+    void bitmap(int x0, int y0, uint8_t *pBitmap, 
+                int bmp_width, int bmp_height) {
       myOLED.erase();
       myOLED.bitmap(x0, y0, pBitmap, bmp_width, bmp_height);
       myOLED.display();
@@ -182,8 +184,8 @@ CRGB           leds[NUM_LEDS] = {0};     // Software gamma mode.
 
 class LEDStripWrapper {
   public:
-    static const uint8_t  DATA_PIN = 8;
-    static const uint8_t  CLOCK_PIN = 10;
+    static const int  DATA_PIN = 8;
+    static const int  CLOCK_PIN = 10;
     static void speedTest() {
       Timer timer("speedTest()");
       for (int i = 0; i < NUM_LEDS; i++) {
@@ -199,7 +201,7 @@ class LEDStripWrapper {
       // the HD and non-HD mode.
       const int NUM_TO_TEST = NUM_LEDS;
       for (int i = 0; i < NUM_TO_TEST; i++) {
-          uint8_t brightness = map(i, 0, NUM_TO_TEST - 1, 0, 255);
+          int brightness = map(i, 0, NUM_TO_TEST - 1, 0, 255);
           CRGB c(brightness, brightness, brightness);  // Just make a shade of white.
           leds[i] = c;
       }
@@ -214,8 +216,8 @@ class LEDStripWrapper {
     }
     void showBitmap(Bitmap *pBitmap) {
       int ledIndex = 0;
-      for (uint8_t x = 0; x < pBitmap->width; x++) {
-        for (uint8_t y = 0; y < pBitmap->height; y++) {
+      for (int x = 0; x < pBitmap->width; x++) {
+        for (int y = 0; y < pBitmap->height; y++) {
           if (pBitmap->getBit(x, y)) {
             leds[ledIndex++] = CRGB::White;
           } else {
@@ -282,8 +284,8 @@ static uint8_t bmp_truck_data[] = {
 
 class App {
   public:
-    uint8_t width = 16;
-    uint8_t height = 16;
+    int width = 16;
+    int height = 16;
 
   private:
     bool                  doSpeedTest = false;
@@ -299,8 +301,9 @@ class App {
       oledWrapper->bitmap(0, 0, bmp_truck_data, BMP_TRUCK_WIDTH, BMP_TRUCK_HEIGHT);
     }
     void bitmapTest() {
-      Bitmap  bm(width, height);    for (uint8_t x = 0; x < width; x++) {
-        for (uint8_t y = 0; y < height; y++) {
+      Bitmap  bm(width, height);
+      for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
           if (x == y) {
             bm.setBit(x, y);
           }
@@ -308,12 +311,12 @@ class App {
       }
       bm.dump("diagonal");
       bm.clear();
-      for (uint8_t x = 0; x < width; x++) {
+      for (int x = 0; x < width; x++) {
           bm.setBit(x, 0);
       }
       bm.dump("horizontal");
       bm.clear();
-      for (uint8_t y = 0; y < height; y++) {
+      for (int y = 0; y < height; y++) {
         bm.setBit(0, y);
       }
       bm.dump("vertical");
