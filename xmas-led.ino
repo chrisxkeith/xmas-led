@@ -290,7 +290,7 @@ class App {
   private:
     bool                  doSpeedTest = false;
     bool                  doRampTest = false;
-    bool                  doBitmapTest = false;
+    bool                  doOledBitmapTest = false;
 
     String configs[4] = {
       "~2024Dec14:08:36", // date +"%Y%b%d:%H:%M"
@@ -299,6 +299,15 @@ class App {
 
     void truckTest() {
       oledWrapper->bitmap(0, 0, bmp_truck_data, BMP_TRUCK_WIDTH, BMP_TRUCK_HEIGHT);
+    }
+    void runTest(Bitmap* bm, String title) {
+      if (doOledBitmapTest) {
+        oledWrapper->bitmap(0, 0, bm->bitmap, width, height);
+        delay(2000);
+      } else {
+        bm->dump(title);
+      }
+      bm->clear();
     }
     void bitmapTest() {
       Bitmap  bm(width, height);
@@ -309,17 +318,17 @@ class App {
           }
         }
       }
-      bm.dump("diagonal");
+      runTest(&bm, "diagonal");
       bm.clear();
       for (int x = 0; x < width; x++) {
           bm.setBit(x, 0);
       }
-      bm.dump("horizontal");
+      runTest(&bm, "horizontal");
       bm.clear();
       for (int y = 0; y < height; y++) {
         bm.setBit(0, y);
       }
-      bm.dump("vertical");
+      runTest(&bm, "vertical");
     }
     void setWidthHeight(String s) {
       int w;
@@ -362,6 +371,10 @@ class App {
         } else if (teststr.equals("stopRampTest")) {
           doRampTest = false;
           LEDStripWrapper::blankAll();
+        } else if (teststr.equals("startOledBitmapTest")) {
+          doOledBitmapTest = true;
+        } else if (teststr.equals("stopOledBitmapTest")) {
+          doOledBitmapTest = false;
         } else if (teststr.equals("runBitmapTest")) {
           bitmapTest();
         } else if (teststr.equals("blankAll")) {
@@ -373,6 +386,7 @@ class App {
           msg.concat(teststr);
           msg.concat("'. Expected one of startSpeedTest, stopSpeedTest, "
                     "startRampTest, stopRampTest, runBitmapTest, "
+                    "startOledBitmapTest, stopOledBitmapTest, "
                     "blankAll, w,h=[width],[height]");
           Serial.println(msg);
         }
@@ -399,9 +413,9 @@ class App {
       oledWrapper->clear();
     }
     void loop() {
-      if (doSpeedTest)  { LEDStripWrapper::speedTest(); }
-      if (doRampTest)   { LEDStripWrapper::rampTest(); }
-      if (doBitmapTest) { bitmapTest(); }
+      if (doSpeedTest)      { LEDStripWrapper::speedTest(); }
+      if (doRampTest)       { LEDStripWrapper::rampTest(); }
+      if (doOledBitmapTest) { bitmapTest(); }
       checkSerial();
     }
 };
