@@ -60,12 +60,14 @@ class Timer {
     }
 };
 
-#include <cstring>
+#include <cstring> // for memset()
+// Horizontal bytes, left-to-right, top-to-bottom.
+// Most-significant bit of first byte == (0,0).
 // 1 bit deep, e.g., monochrome
 class Bitmap {
   public:
-    uint8_t   width;
-    uint8_t   height;
+    int       width;
+    int       height;
     uint8_t*  bitmap;
     Bitmap(uint8_t width, uint8_t height) {
       if (width % 8 != 0) {
@@ -83,7 +85,7 @@ class Bitmap {
       std::memset(bitmap, 0b0000, sizeInBytes());
     }
     int sizeInBytes() { return width * height / 8; }
-    int calcByteIndex(uint8_t x, uint8_t y) {
+    int calcByteIndex(int x, int y) {
       int i = (x / 8) + (y * width / 8);
       if (i >= sizeInBytes() * 8) {
         String err("x=");
@@ -101,11 +103,11 @@ class Bitmap {
     }
     void setBit(uint8_t x,  uint8_t y) {
       int i = calcByteIndex(x, y);
-      bitmap[i] |= (1 << x);
+      bitmap[i] |= (1 << ( 7 - x));
     }
     void clearBit(uint8_t x,  uint8_t y) {
       int i = calcByteIndex(x, y);
-      bitmap[i] &= ~(1 << x);
+      bitmap[i] &= ~(1 << (7 - x));
     }
     int getBit(uint8_t x, uint8_t y) {
       byte b = bitmap[calcByteIndex(x, y)];
@@ -117,7 +119,7 @@ class Bitmap {
       String msg;
       for (int y = 0; y < height; y++) {
         msg.remove(0);
-        for (int x = 0; x < width / 8; x++) {
+        for (int x = 0; x < width; x += 8) {
           byte b = bitmap[calcByteIndex(x, y)];
           for (int i = 7; i >= 0; i--) {
             msg.concat((b >> i) & 1);
@@ -163,6 +165,8 @@ class OLEDWrapper {
     void endDisplay() {
       myOLED.display();
     }
+    // Must convert to OLED bitmap format: vertical bytes, left-to-right, top-to-bottom
+    // Least-significant bit of first byte == (0,0).
     void bitmap(uint8_t x0, uint8_t y0, uint8_t *pBitmap, 
                 uint8_t bmp_width, uint8_t bmp_height) {
       myOLED.erase();
@@ -287,7 +291,7 @@ class App {
     bool                  doBitmapTest = false;
 
     String configs[4] = {
-      "~2024Dec12:10:52", // date +"%Y%b%d:%H:%M"
+      "~2024Dec14:08:36", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
@@ -295,36 +299,7 @@ class App {
       oledWrapper->bitmap(0, 0, bmp_truck_data, BMP_TRUCK_WIDTH, BMP_TRUCK_HEIGHT);
     }
     void bitmapTest() {
-      Bitmap  bm(width, height);
-      {
-        Timer t1("bitmapTest");
-        for (uint8_t x = 0; x < width; x++) {
-          for (uint8_t y = 0; y < height; y++) {
-            if (x % 2) {
-              if (y % 2) {
-                bm.setBit(x, y);
-              }
-            } else {
-              if (y % 2 == 0) {
-                bm.setBit(x, y);
-              }
-            }
-          }
-        }
-      }
-      bm.dump("checkerboad");
-      for (uint8_t x = 0; x < width; x++) {
-        for (uint8_t y = 0; y < height; y++) {
-          if (bm.getBit(x, y)) {
-            bm.clearBit(x, y);
-          } else {
-            bm.setBit(x, y);
-          }
-        }
-      }
-      bm.dump("reverse checkerboad");
-      bm.clear();
-    for (uint8_t x = 0; x < width; x++) {
+      Bitmap  bm(width, height);    for (uint8_t x = 0; x < width; x++) {
         for (uint8_t y = 0; y < height; y++) {
           if (x == y) {
             bm.setBit(x, y);
