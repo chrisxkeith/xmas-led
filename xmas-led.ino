@@ -282,53 +282,59 @@ static uint8_t bmp_truck_data[] = {
     0xFF,
 }; // 38 bytes
 
-class App {
+class XmasDisplayer {
+  private:
+    const int     FRAME_RATE = 1000 / 24;
+    unsigned long lastDisplay = 0;
+    Bitmap*       bitmap;
+
+    void convertToOLED() {
+      // to come
+    }
   public:
     int width = 16;
     int height = 16;
 
-  private:
-    bool                  doSpeedTest = false;
-    bool                  doRampTest = false;
-    bool                  doOledBitmapTest = false;
-
-    String configs[4] = {
-      "~2024Dec14:08:36", // date +"%Y%b%d:%H:%M"
-      "https://github.com/chrisxkeith/xmas-led",
-    };
-
-    void truckTest() {
-      oledWrapper->bitmap(0, 0, bmp_truck_data, BMP_TRUCK_WIDTH, BMP_TRUCK_HEIGHT);
+    XmasDisplayer() {
+      bitmap = new Bitmap(width, height);
     }
-    void runTest(Bitmap* bm, String title) {
+    void display() {
+      unsigned long now = millis();
+      if (now < lastDisplay) {
+        lastDisplay = 0;
+      }
+      if (now - lastDisplay < FRAME_RATE) {
+        return;
+      }
+    }
+    void runTest(String title, bool doOledBitmapTest) {
       if (doOledBitmapTest) {
-        oledWrapper->bitmap(0, 0, bm->bitmap, width, height);
+        oledWrapper->bitmap(0, 0, bitmap->bitmap, width, height);
         delay(2000);
       } else {
-        bm->dump(title);
+        bitmap->dump(title);
       }
-      bm->clear();
+      bitmap->clear();
     }
-    void bitmapTest() {
-      Bitmap  bm(width, height);
+    void bitmapTest(bool doOledBitmapTest) {
       for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
           if (x == y) {
-            bm.setBit(x, y);
+            bitmap->setBit(x, y);
           }
         }
       }
-      runTest(&bm, "diagonal");
-      bm.clear();
+      runTest("diagonal", doOledBitmapTest);
+      bitmap->clear();
       for (int x = 0; x < width; x++) {
-          bm.setBit(x, 0);
+          bitmap->setBit(x, 0);
       }
-      runTest(&bm, "horizontal");
-      bm.clear();
+      runTest("horizontal", doOledBitmapTest);
+      bitmap->clear();
       for (int y = 0; y < height; y++) {
-        bm.setBit(0, y);
+        bitmap->setBit(0, y);
       }
-      runTest(&bm, "vertical");
+      runTest("vertical", doOledBitmapTest);
     }
     void setWidthHeight(String s) {
       int w;
@@ -357,6 +363,23 @@ class App {
         Serial.println(msg);
       }
     }
+};
+XmasDisplayer xmasDisplayer;
+
+class App {
+  private:
+    bool  doSpeedTest = false;
+    bool  doRampTest = false;
+    bool  doOledBitmapTest = false;
+
+    String configs[4] = {
+      "~2024Dec14:08:36", // date +"%Y%b%d:%H:%M"
+      "https://github.com/chrisxkeith/xmas-led",
+    };
+
+    void truckTest() {
+      oledWrapper->bitmap(0, 0, bmp_truck_data, BMP_TRUCK_WIDTH, BMP_TRUCK_HEIGHT);
+    }
     void checkSerial() {
       if (Serial.available() > 0) {
         String teststr = Serial.readString();  // read until timeout
@@ -375,12 +398,13 @@ class App {
           doOledBitmapTest = true;
         } else if (teststr.equals("stopOledBitmapTest")) {
           doOledBitmapTest = false;
+          oledWrapper->clear();
         } else if (teststr.equals("runBitmapTest")) {
-          bitmapTest();
+          xmasDisplayer.bitmapTest(doOledBitmapTest);
         } else if (teststr.equals("blankAll")) {
           LEDStripWrapper::blankAll();
         } else if (teststr.startsWith("w,h=")) {
-          setWidthHeight(teststr);
+          xmasDisplayer.setWidthHeight(teststr);
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
@@ -415,7 +439,7 @@ class App {
     void loop() {
       if (doSpeedTest)      { LEDStripWrapper::speedTest(); }
       if (doRampTest)       { LEDStripWrapper::rampTest(); }
-      if (doOledBitmapTest) { bitmapTest(); }
+      if (doOledBitmapTest) { xmasDisplayer.bitmapTest(doOledBitmapTest); }
       checkSerial();
     }
 };
