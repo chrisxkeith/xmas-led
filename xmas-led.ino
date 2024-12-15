@@ -208,13 +208,13 @@ class LEDStripWrapper {
       FastLED.show();  // All LEDs are now displayed.
       delay(8);  // Wait 8 milliseconds until the next frame.
     }
-    static void blankAll() {
+    static void clear() {
       for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = CRGB::Black;
       }
       FastLED.show();
     }
-    void showBitmap(Bitmap *pBitmap) {
+    static void showBitmap(Bitmap *pBitmap) {
       int ledIndex = 0;
       for (int x = 0; x < pBitmap->width; x++) {
         for (int y = 0; y < pBitmap->height; y++) {
@@ -310,6 +310,7 @@ class XmasDisplayer {
     void runTest(String title, bool doOledBitmapTest) {
       if (doOledBitmapTest) {
         oledWrapper->bitmap(0, 0, bitmap->bitmap, width, height);
+        LEDStripWrapper::showBitmap(bitmap);
         delay(2000);
       } else {
         bitmap->dump(title);
@@ -388,21 +389,22 @@ class App {
           doSpeedTest = true;
         } else if (teststr.equals("stopSpeedTest")) {
           doSpeedTest = false;
-          LEDStripWrapper::blankAll();
+          LEDStripWrapper::clear();
         } else if (teststr.equals("startRampTest")) {
           doRampTest = true;
         } else if (teststr.equals("stopRampTest")) {
           doRampTest = false;
-          LEDStripWrapper::blankAll();
+          LEDStripWrapper::clear();
         } else if (teststr.equals("startOledBitmapTest")) {
           doOledBitmapTest = true;
         } else if (teststr.equals("stopOledBitmapTest")) {
           doOledBitmapTest = false;
           oledWrapper->clear();
+          LEDStripWrapper::clear();
         } else if (teststr.equals("runBitmapTest")) {
           xmasDisplayer.bitmapTest(doOledBitmapTest);
-        } else if (teststr.equals("blankAll")) {
-          LEDStripWrapper::blankAll();
+        } else if (teststr.equals("clear")) {
+          LEDStripWrapper::clear();
         } else if (teststr.startsWith("w,h=")) {
           xmasDisplayer.setWidthHeight(teststr);
         } else {
@@ -411,7 +413,7 @@ class App {
           msg.concat("'. Expected one of startSpeedTest, stopSpeedTest, "
                     "startRampTest, stopRampTest, runBitmapTest, "
                     "startOledBitmapTest, stopOledBitmapTest, "
-                    "blankAll, w,h=[width],[height]");
+                    "clear, w,h=[width],[height]");
           Serial.println(msg);
         }
       }
@@ -425,8 +427,8 @@ class App {
       Wire.begin();
       FastLED.addLeds<APA102, LEDStripWrapper::DATA_PIN, LEDStripWrapper::CLOCK_PIN, BGR>(leds, NUM_LEDS);
       {
-        Timer t("LEDStripWrapper::blankAll()");
-        LEDStripWrapper::blankAll();
+        Timer t("LEDStripWrapper::clear()");
+        LEDStripWrapper::clear();
       }
       // Utils::scanI2C();
       oledWrapper = new OLEDWrapper(false);
