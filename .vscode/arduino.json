@@ -1,7 +1,7 @@
 {
     "sketch": "xmas-led.ino",
     "output": "build",
-    "configuration": "svl_baud=115200,loader=sparkfun_svl",
-    "board": "SparkFun:apollo3:amap3redboard",
+    "configuration": "svl_baud=921600,loader=sparkfun_svl",
+    "board": "SparkFun:apollo3:amap3atp",
     "port": "/dev/ttyUSB0"
 }

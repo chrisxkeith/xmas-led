@@ -179,18 +179,20 @@ class OLEDWrapper {
 OLEDWrapper* oledWrapper = nullptr;
 
 #include <FastLED.h>
-const int      NUM_LEDS = 300 - 16;
+const int      NUM_LEDS = 16; // 300 - (9 * 16);
 CRGB           leds[NUM_LEDS] = {0};     // Software gamma mode.
 
 class LEDStripWrapper {
   public:
     static const int  DATA_PIN = 8;
     static const int  CLOCK_PIN = 10;
+    static uint32_t   theDelay;
     static void speedTest() {
       Timer timer("speedTest()");
       for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = CRGB::White;
         FastLED.show();
+        delay(theDelay);
         leds[i] = CRGB::Black;
         FastLED.show();
       }
@@ -215,6 +217,15 @@ class LEDStripWrapper {
       FastLED.show();
     }
     static void showBitmap(Bitmap *pBitmap) {
+      int numPixels = pBitmap->width * pBitmap->height; 
+      if (NUM_LEDS < numPixels) {
+        String err("Not enough LEDS, need: ");
+        err.concat(numPixels);
+        err.concat(", have: ");
+        err.concat(NUM_LEDS);
+        Serial.println(err);
+        return;
+      }
       int ledIndex = 0;
       for (int x = 0; x < pBitmap->width; x++) {
         for (int y = 0; y < pBitmap->height; y++) {
@@ -234,8 +245,23 @@ class LEDStripWrapper {
         }
       }
       FastLED.show();
-    }    
+    }
+    static void setDelay(String s) {
+      int d;
+      int ret = sscanf(s.c_str(), "theDelay=%d", &d);
+      if (ret != 1) {
+        String err("Error parsing: ");
+        err.concat(s);
+        err.concat(" (Expected theDelay=[delay]) Parsed ");
+        err.concat(ret);
+        err.concat(" items");
+        Serial.println(err);
+      } else {
+        theDelay = d;
+      }
+    }  
 };
+uint32_t LEDStripWrapper::theDelay = 0;
 
 #define BMP_TRUCK_WIDTH  19
 #define BMP_TRUCK_HEIGHT 16
@@ -374,7 +400,7 @@ class App {
     bool  doOledBitmapTest = false;
 
     String configs[4] = {
-      "~2024Dec14:08:36", // date +"%Y%b%d:%H:%M"
+      "~2024Dec16:17:02", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
@@ -407,13 +433,15 @@ class App {
           LEDStripWrapper::clear();
         } else if (teststr.startsWith("w,h=")) {
           xmasDisplayer.setWidthHeight(teststr);
+        } else if (teststr.startsWith("theDelay=")) {
+          LEDStripWrapper::setDelay(teststr);
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
           msg.concat("'. Expected one of startSpeedTest, stopSpeedTest, "
                     "startRampTest, stopRampTest, runBitmapTest, "
                     "startOledBitmapTest, stopOledBitmapTest, "
-                    "clear, w,h=[width],[height]");
+                    "clear, w,h=[width],[height], theDelay=[delayInMilliseconds]");
           Serial.println(msg);
         }
       }
