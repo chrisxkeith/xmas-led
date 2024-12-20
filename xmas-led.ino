@@ -217,6 +217,19 @@ class LEDStripWrapper {
       }
       FastLED.show();
     }
+    static void setLED(int x, int y, int width, int height, CRGB::HTMLColorCode color) {
+      bool  reverse = (y % 2 == 0);
+      int   byteIndex = y * (width / 8) + (x / 8);
+      if (reverse) {
+        if (byteIndex % 2) { // only works if two bytes wide.
+          byteIndex -= 1;
+        } else {
+          byteIndex += 1;
+        }
+      }
+      int   ledIndex = byteIndex + x % 8;
+      leds[ledIndex] = color; 
+    }
     static void showBitmap(Bitmap *pBitmap) {
       int numPixels = pBitmap->width * pBitmap->height; 
       if (NUM_LEDS < numPixels) {
@@ -225,24 +238,18 @@ class LEDStripWrapper {
         err.concat(", have: ");
         err.concat(NUM_LEDS);
         Serial.println(err);
+        clear();
+        speedTest();
+        clear();
         return;
       }
-      int ledIndex = 0;
       for (int x = 0; x < pBitmap->width; x++) {
         for (int y = 0; y < pBitmap->height; y++) {
           if (pBitmap->getBit(x, y)) {
-            leds[ledIndex++] = CRGB::White;
+            setLED(x, y, pBitmap->width, pBitmap->height, CRGB::White);
           } else {
-            leds[ledIndex++] = CRGB::Black;
+            setLED(x, y, pBitmap->width, pBitmap->height, CRGB::Black);
           }
-        }
-        if (ledIndex >= NUM_LEDS) {
-          String err("Went beyond length of LED=");
-          err.concat(NUM_LEDS);
-          err.concat(" , ledIndex=");
-          err.concat(ledIndex);
-          Serial.println(err);
-          break;
         }
       }
       FastLED.show();
@@ -340,17 +347,19 @@ class XmasDisplayer {
         return;
       }
     }
-    void runTest(String title, bool doOledBitmapTest) {
-      if (doOledBitmapTest) {
+    void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
+      if (showOLED) {
         oledWrapper->bitmap(0, 0, bitmap->bitmap, width, height);
+      }
+      if (showLEDStrip) {
         LEDStripWrapper::showBitmap(bitmap);
-        delay(2000);
-      } else {
+      }
+      if (showTextBitmap) {
         bitmap->dump(title);
       }
       bitmap->clear();
     }
-    void bitmapTest(bool doOledBitmapTest) {
+    void bitmapTest(bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
           if (x == y) {
@@ -358,17 +367,17 @@ class XmasDisplayer {
           }
         }
       }
-      runTest("diagonal", doOledBitmapTest);
+      runTest("diagonal", showOLED, showLEDStrip, showTextBitmap);
       bitmap->clear();
       for (int x = 0; x < width; x++) {
           bitmap->setBit(x, 0);
       }
-      runTest("horizontal", doOledBitmapTest);
+      runTest("horizontal", showOLED, showLEDStrip, showTextBitmap);
       bitmap->clear();
       for (int y = 0; y < height; y++) {
         bitmap->setBit(0, y);
       }
-      runTest("vertical", doOledBitmapTest);
+      runTest("vertical", showOLED, showLEDStrip, showTextBitmap);
     }
     void setWidthHeight(String s) {
       int w;
@@ -404,10 +413,16 @@ class App {
   private:
     bool  doSpeedTest = false;
     bool  doRampTest = false;
-    bool  doOledBitmapTest = false;
+    bool  doBitmapTest = false;
+    bool  showOLED = false;
+    bool  showLEDStrip = false;
+    bool  showTextBitmap = false;
+
     String cmds = "startSpeedTest, stopSpeedTest, "
                     "startRampTest, stopRampTest, runBitmapTest, "
-                    "startOledBitmapTest, stopOledBitmapTest, "
+                    "startBitmapTest, stopBitmapTest, "
+                    "showOLED, showLEDStrip, showTextBitmap, "
+                    "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, w,h=[width],[height], theDelay=[delayInMilliseconds], "
                     "showBuild";
     String configs[4] = {
@@ -437,14 +452,14 @@ class App {
         } else if (teststr.equals("stopRampTest")) {
           doRampTest = false;
           LEDStripWrapper::clear();
-        } else if (teststr.equals("startOledBitmapTest")) {
-          doOledBitmapTest = true;
-        } else if (teststr.equals("stopOledBitmapTest")) {
-          doOledBitmapTest = false;
+        } else if (teststr.equals("startBitmapTest")) {
+          doBitmapTest = true;
+        } else if (teststr.equals("stopBitmapTest")) {
+          doBitmapTest = false;
           oledWrapper->clear();
           LEDStripWrapper::clear();
         } else if (teststr.equals("runBitmapTest")) {
-          xmasDisplayer.bitmapTest(doOledBitmapTest);
+          xmasDisplayer.bitmapTest(showOLED, showLEDStrip, showTextBitmap);
         } else if (teststr.equals("clear")) {
           LEDStripWrapper::clear();
           oledWrapper->clear();
@@ -452,6 +467,18 @@ class App {
           xmasDisplayer.setWidthHeight(teststr);
         } else if (teststr.startsWith("theDelay=")) {
           LEDStripWrapper::setDelay(teststr);
+        } else if (teststr.startsWith("showOLED")) {
+          showOLED = true;
+        } else if (teststr.startsWith("showLEDStrip")) {
+          showLEDStrip = true;
+        } else if (teststr.startsWith("showTextBitmap")) {
+          showTextBitmap = true;
+        } else if (teststr.startsWith("hideOLED")) {
+          showOLED = false;
+        } else if (teststr.startsWith("hideLEDStrip")) {
+          showLEDStrip = false;
+        } else if (teststr.startsWith("hideTextBitmap")) {
+          showTextBitmap = false;
         } else if (teststr.startsWith("showBuild")) {
           showBuild();
         } else {
@@ -481,9 +508,9 @@ class App {
       Serial.println(cmds.c_str());
     }
     void loop() {
-      if (doSpeedTest)      { LEDStripWrapper::speedTest(); }
-      if (doRampTest)       { LEDStripWrapper::rampTest(); }
-      if (doOledBitmapTest) { xmasDisplayer.bitmapTest(doOledBitmapTest); }
+      if (doSpeedTest)  { LEDStripWrapper::speedTest(); }
+      if (doRampTest)   { LEDStripWrapper::rampTest(); }
+      if (doBitmapTest) { xmasDisplayer.bitmapTest(showOLED, showLEDStrip, showTextBitmap); }
       checkSerial();
     }
 };
