@@ -169,6 +169,7 @@ class OLEDWrapper {
     }
     // Must convert to OLED bitmap format: vertical bytes, left-to-right, top-to-bottom
     // Least-significant bit of first byte == (0,0).
+    // Brute-force loops over bytes, or get/setBit?
     void bitmap(int x0, int y0, uint8_t *pBitmap, 
                 int bmp_width, int bmp_height) {
       myOLED.erase();
@@ -179,7 +180,7 @@ class OLEDWrapper {
 OLEDWrapper* oledWrapper = nullptr;
 
 #include <FastLED.h>
-const int      NUM_LEDS = 16; // 300 - (9 * 16);
+const int      NUM_LEDS = 256;
 CRGB           leds[NUM_LEDS] = {0};     // Software gamma mode.
 
 class LEDStripWrapper {
@@ -261,7 +262,7 @@ class LEDStripWrapper {
       }
     }  
 };
-uint32_t LEDStripWrapper::theDelay = 0;
+uint32_t LEDStripWrapper::theDelay = 30;
 
 #define BMP_TRUCK_WIDTH  19
 #define BMP_TRUCK_HEIGHT 16
@@ -400,7 +401,7 @@ class App {
     bool  doOledBitmapTest = false;
 
     String configs[4] = {
-      "~2024Dec16:17:02", // date +"%Y%b%d:%H:%M"
+      "~2024Dec19:17:15", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
