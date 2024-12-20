@@ -266,8 +266,6 @@ class LEDStripWrapper {
       leds[0] = CRGB::White;
       leds[NUM_LEDS - 1] = CRGB::White;
       FastLED.show();
-      delay(3000);
-      clear();
     }
 };
 uint32_t LEDStripWrapper::theDelay = 30;
@@ -407,7 +405,11 @@ class App {
     bool  doSpeedTest = false;
     bool  doRampTest = false;
     bool  doOledBitmapTest = false;
-
+    String cmds = "startSpeedTest, stopSpeedTest, "
+                    "startRampTest, stopRampTest, runBitmapTest, "
+                    "startOledBitmapTest, stopOledBitmapTest, "
+                    "clear, w,h=[width],[height], theDelay=[delayInMilliseconds], "
+                    "showBuild";
     String configs[4] = {
       "~2024Dec19:17:15", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
@@ -415,6 +417,11 @@ class App {
 
     void truckTest() {
       oledWrapper->bitmap(0, 0, bmp_truck_data, BMP_TRUCK_WIDTH, BMP_TRUCK_HEIGHT);
+    }
+    void showBuild() {
+      oledWrapper->clear();
+      oledWrapper->addText(0, 0, configs[0]);
+      oledWrapper->endDisplay();
     }
     void checkSerial() {
       if (Serial.available() > 0) {
@@ -440,17 +447,18 @@ class App {
           xmasDisplayer.bitmapTest(doOledBitmapTest);
         } else if (teststr.equals("clear")) {
           LEDStripWrapper::clear();
+          oledWrapper->clear();
         } else if (teststr.startsWith("w,h=")) {
           xmasDisplayer.setWidthHeight(teststr);
         } else if (teststr.startsWith("theDelay=")) {
           LEDStripWrapper::setDelay(teststr);
+        } else if (teststr.startsWith("showBuild")) {
+          showBuild();
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
-          msg.concat("'. Expected one of startSpeedTest, stopSpeedTest, "
-                    "startRampTest, stopRampTest, runBitmapTest, "
-                    "startOledBitmapTest, stopOledBitmapTest, "
-                    "clear, w,h=[width],[height], theDelay=[delayInMilliseconds]");
+          msg.concat("'. Expected one of ");
+          msg.concat(cmds);
           Serial.println(msg);
         }
       }
@@ -470,10 +478,7 @@ class App {
       // Utils::scanI2C();
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
-      oledWrapper->addText(0, 0, configs[0]);
-      oledWrapper->endDisplay();
-      delay(4000);
-      oledWrapper->clear();
+      Serial.println(cmds.c_str());
     }
     void loop() {
       if (doSpeedTest)      { LEDStripWrapper::speedTest(); }
