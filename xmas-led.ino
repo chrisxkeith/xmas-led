@@ -260,7 +260,15 @@ class LEDStripWrapper {
       } else {
         theDelay = d;
       }
-    }  
+    }
+    static void startup() {
+      clear();
+      leds[0] = CRGB::White;
+      leds[NUM_LEDS - 1] = CRGB::White;
+      FastLED.show();
+      delay(3000);
+      clear();
+    }
 };
 uint32_t LEDStripWrapper::theDelay = 30;
 
@@ -456,8 +464,8 @@ class App {
       Wire.begin();
       FastLED.addLeds<APA102, LEDStripWrapper::DATA_PIN, LEDStripWrapper::CLOCK_PIN, BGR>(leds, NUM_LEDS);
       {
-        Timer t("LEDStripWrapper::clear()");
-        LEDStripWrapper::clear();
+        Timer t("LEDStripWrapper::startup()");
+        LEDStripWrapper::startup();
       }
       // Utils::scanI2C();
       oledWrapper = new OLEDWrapper(false);
