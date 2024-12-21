@@ -111,7 +111,7 @@ class Bitmap {
     }
     int getBit(int x, int y) {
       byte b = bitmap[calcByteIndex(x, y)];
-      bool bit = (b >> x) & 0x1;
+      bool bit = b >> (7 - (x % 8)) & 0x1;
       return bit;
     }
     void dump(String title) {
@@ -119,14 +119,9 @@ class Bitmap {
       String msg;
       for (int y = 0; y < height; y++) {
         msg.remove(0);
-        for (int x = 0; x < width; x += 8) {
-          byte b = bitmap[calcByteIndex(x, y)];
-          for (int i = 7; i >= 0; i--) {
-            int bit = (b >> i) & 1;
-            char c = (bit ? '1' : '.');
-            msg.concat(c);
-          }
-          msg.concat(" ");
+        for (int x = 0; x < width; x++) {
+          char c = (getBit(x, y) ? '1' : '.');
+          msg.concat(c);
         }
         Serial.println(msg);
       }
