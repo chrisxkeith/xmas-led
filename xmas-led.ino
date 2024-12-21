@@ -217,6 +217,7 @@ class LEDStripWrapper {
       }
       FastLED.show();
     }
+    static bool showedError;
     static void setLED(int x, int y, int width, int height, CRGB::HTMLColorCode color) {
       bool  reverse = (y % 2 == 0);
       int   byteIndex = y * (width / 8) + (x / 8);
@@ -227,8 +228,19 @@ class LEDStripWrapper {
           byteIndex += 1;
         }
       }
-      int   ledIndex = byteIndex + x % 8;
-      leds[ledIndex] = color; 
+      int   ledIndex = (byteIndex * 8) + (x % 8);
+      if ((ledIndex < 0) || (ledIndex > NUM_LEDS)) {
+        if (!showedError) {
+          String err("ledIndex out of range: ");
+          err.concat(ledIndex);
+          err.concat(", NUM_LEDS: ");
+          err.concat(NUM_LEDS);
+          Serial.println(err);
+          showedError =true;
+        }
+      } else {
+        leds[ledIndex] = color; 
+      }
     }
     static void showBitmap(Bitmap *pBitmap) {
       int numPixels = pBitmap->width * pBitmap->height; 
@@ -279,6 +291,7 @@ class LEDStripWrapper {
     }
 };
 uint32_t LEDStripWrapper::theDelay = 30;
+bool LEDStripWrapper::showedError = false;
 
 #define BMP_TRUCK_WIDTH  19
 #define BMP_TRUCK_HEIGHT 16
