@@ -273,6 +273,9 @@ class LEDStripWrapper {
       leds[0] = CRGB::White;
       leds[NUM_LEDS - 1] = CRGB::White;
       FastLED.show();
+      leds[0] = CRGB::Black;
+      leds[NUM_LEDS - 1] = CRGB::Black;
+      FastLED.show();
     }
 };
 uint32_t LEDStripWrapper::theDelay = 30;
@@ -350,9 +353,12 @@ class XmasDisplayer {
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       if (showOLED) {
         oledWrapper->bitmap(0, 0, bitmap->bitmap, width, height);
+        delay(2000);
       }
       if (showLEDStrip) {
         LEDStripWrapper::showBitmap(bitmap);
+        delay(2000);
+        LEDStripWrapper::clear();
       }
       if (showTextBitmap) {
         bitmap->dump(title);
@@ -426,7 +432,7 @@ class App {
                     "clear, w,h=[width],[height], theDelay=[delayInMilliseconds], "
                     "showBuild";
     String configs[4] = {
-      "~2024Dec19:17:15", // date +"%Y%b%d:%H:%M"
+      "~2024Dec20:14:13", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
@@ -475,8 +481,10 @@ class App {
           showTextBitmap = true;
         } else if (teststr.startsWith("hideOLED")) {
           showOLED = false;
+          oledWrapper->clear();
         } else if (teststr.startsWith("hideLEDStrip")) {
           showLEDStrip = false;
+          LEDStripWrapper::clear();
         } else if (teststr.startsWith("hideTextBitmap")) {
           showTextBitmap = false;
         } else if (teststr.startsWith("showBuild")) {
