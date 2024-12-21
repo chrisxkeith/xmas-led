@@ -180,10 +180,14 @@ class OLEDWrapper {
 OLEDWrapper* oledWrapper = nullptr;
 
 #include <FastLED.h>
-const int      NUM_LEDS = 256;
-CRGB           leds[NUM_LEDS] = {0};     // Software gamma mode.
+const int     LEDS_WIDTH = 16;
+const int     LEDS_HEIGHT = 16;
+const int     NUM_LEDS = LEDS_WIDTH * LEDS_HEIGHT;
+CRGB          leds[NUM_LEDS] = {0};     // Software gamma mode.
 
 class LEDStripWrapper {
+  private:
+    static int pixelToLedIndex[NUM_LEDS];
   public:
     static const int  DATA_PIN = 8;
     static const int  CLOCK_PIN = 10;
@@ -217,38 +221,9 @@ class LEDStripWrapper {
       }
       FastLED.show();
     }
-    static bool showedError;
-    static void setLED(int x, int y, int width, int height, CRGB::HTMLColorCode color) {
-      bool  reverse = (y % 2 == 0);
-      int   byteIndex = y * (width / 8) + (x / 8);
-      if (reverse) {
-        if (byteIndex % 2) { // only works if two bytes wide.
-          byteIndex -= 1;
-        } else {
-          byteIndex += 1;
-        }
-      }
-      int   ledIndex = (byteIndex * 8) + (x % 8);
-      if ((ledIndex < 0) || (ledIndex > NUM_LEDS)) {
-        if (!showedError) {
-          String err("ledIndex out of range: ");
-          err.concat(ledIndex);
-          err.concat(", NUM_LEDS: ");
-          err.concat(NUM_LEDS);
-          Serial.println(err);
-          showedError =true;
-        }
-      } else {
-        leds[ledIndex] = color; 
-      }
-    }
     static void showBitmap(Bitmap *pBitmap) {
-      int numPixels = pBitmap->width * pBitmap->height; 
-      if (NUM_LEDS < numPixels) {
-        String err("Not enough LEDS, need: ");
-        err.concat(numPixels);
-        err.concat(", have: ");
-        err.concat(NUM_LEDS);
+      if (pBitmap->width != LEDS_WIDTH || pBitmap->height != LEDS_WIDTH) {
+        String err("bitmap must be 16 x 16");
         Serial.println(err);
         clear();
         speedTest();
@@ -258,9 +233,9 @@ class LEDStripWrapper {
       for (int x = 0; x < pBitmap->width; x++) {
         for (int y = 0; y < pBitmap->height; y++) {
           if (pBitmap->getBit(x, y)) {
-            setLED(x, y, pBitmap->width, pBitmap->height, CRGB::White);
+            leds[pixelToLedIndex[(y * LEDS_WIDTH) + x]] = CRGB::White;
           } else {
-            setLED(x, y, pBitmap->width, pBitmap->height, CRGB::Black);
+            leds[pixelToLedIndex[(y * LEDS_WIDTH) + x]] = CRGB::Black;
           }
         }
       }
@@ -290,8 +265,17 @@ class LEDStripWrapper {
       FastLED.show();
     }
 };
-uint32_t LEDStripWrapper::theDelay = 30;
-bool LEDStripWrapper::showedError = false;
+uint32_t LEDStripWrapper::theDelay = 0;
+int LEDStripWrapper::pixelToLedIndex[NUM_LEDS] = {
+   15,  14,  13,  12,  11,  10,   9,   8,   7,   6,   5,   4,   3,   2,   1,   0,
+   16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,
+   47,  46,  45,  44,  43,  42,  41,  40,  39,  38,  37,  36,  35,  34,  33,  32,
+   48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,
+   79,  78,  77,  76,  75,  74,  73,  72,  71,  70,  69,  68,  67,  66,  65,  64,
+   80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,
+  111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101, 100,  99,  98,  97,  96,
+  112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127
+};
 
 #define BMP_TRUCK_WIDTH  19
 #define BMP_TRUCK_HEIGHT 16
