@@ -362,20 +362,19 @@ class XmasDisplayer {
         for (int y = 0; y < height; y++) {
           if (x == y) {
             bitmap->setBit(x, y);
+            bitmap->setBit(15 - x, y);
           }
         }
       }
-      runTest("diagonal", showOLED, showLEDStrip, showTextBitmap);
-      bitmap->clear();
-      for (int x = 0; x < width; x++) {
-          bitmap->setBit(x, 0);
+      for (int x = 1; x < width - 1; x++) {
+        bitmap->setBit(x, 0);
+        bitmap->setBit(x, 15);
       }
-      runTest("horizontal", showOLED, showLEDStrip, showTextBitmap);
-      bitmap->clear();
-      for (int y = 0; y < height; y++) {
+      for (int y = 1; y < height - 1; y++) {
         bitmap->setBit(0, y);
+        bitmap->setBit(15, y);
       }
-      runTest("vertical", showOLED, showLEDStrip, showTextBitmap);
+      runTest("diagonals", showOLED, showLEDStrip, showTextBitmap);
     }
     void setWidthHeight(String s) {
       int w;
