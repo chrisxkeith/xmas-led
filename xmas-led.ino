@@ -138,6 +138,12 @@ class Bitmap {
 Qwiic1in3OLED myOLED; // 128x64
 
 class OLEDWrapper {
+  private:
+    // kOLED1in3Width 128
+    // kOLED1in3Height 64
+    const int SIZE_IN_BYTES = kOLED1in3Width * kOLED1in3Height / 8;
+    uint8_t*  oledBitmap = new uint8_t[SIZE_IN_BYTES];
+
   public:   
     OLEDWrapper(bool stopOnFail) {
       Wire.begin();
@@ -162,14 +168,24 @@ class OLEDWrapper {
     void endDisplay() {
       myOLED.display();
     }
+    void rawBitmap(uint8_t *pBitmap, uint8_t width, uint8_t height) {
+      myOLED.erase();
+      myOLED.bitmap(0, 0, pBitmap, width, height);
+      myOLED.display();
+    }
     // Must convert to OLED bitmap format: vertical bytes, left-to-right, top-to-bottom
     // Least-significant bit of first byte == (0,0).
-    // Brute-force loops over bytes, or get/setBit?
-    void bitmap(int x0, int y0, uint8_t *pBitmap, 
-                int bmp_width, int bmp_height) {
-      myOLED.erase();
-      myOLED.bitmap(x0, y0, pBitmap, bmp_width, bmp_height);
-      myOLED.display();
+    void bitmap(Bitmap *pBitmap) {
+      std::memset(oledBitmap, 0b0000, SIZE_IN_BYTES);
+      for (int x = 0; x < pBitmap->width; x++) {
+        for (int y = 0; y < pBitmap->height; y++) {
+          if (pBitmap->getBit(x, y)) {
+            int   byteIndex = (x * kOLED1in3Height / 8) + ((kOLED1in3Height - y) / 8);
+            oledBitmap[byteIndex] |= (1 << (y % 8));
+          } 
+        }
+      }
+      rawBitmap(oledBitmap, kOLED1in3Width, kOLED1in3Height);
     }
 };
 OLEDWrapper* oledWrapper = nullptr;
@@ -352,7 +368,7 @@ class XmasDisplayer {
     }
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       if (showOLED) {
-        oledWrapper->bitmap(0, 0, bitmap->bitmap, width, height);
+        oledWrapper->bitmap(bitmap);
         delay(2000);
       }
       if (showLEDStrip) {
@@ -429,14 +445,14 @@ class App {
                     "showOLED, showLEDStrip, showTextBitmap, "
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, w,h=[width],[height], theDelay=[delayInMilliseconds], "
-                    "showBuild";
+                    "showBuild, truckTest";
     String configs[4] = {
       "~2024Dec22:13:07", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
     void truckTest() {
-      oledWrapper->bitmap(0, 0, bmp_truck_data, BMP_TRUCK_WIDTH, BMP_TRUCK_HEIGHT);
+      oledWrapper->rawBitmap(bmp_truck_data, BMP_TRUCK_WIDTH, BMP_TRUCK_HEIGHT);
     }
     void showBuild() {
       oledWrapper->clear();
@@ -488,6 +504,8 @@ class App {
           showTextBitmap = false;
         } else if (teststr.startsWith("showBuild")) {
           showBuild();
+        } else if (teststr.startsWith("truckTest")) {
+          truckTest();
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
