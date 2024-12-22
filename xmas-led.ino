@@ -184,8 +184,8 @@ class LEDStripWrapper {
   private:
     static int pixelToLedIndex[NUM_LEDS];
   public:
-    static const int  DATA_PIN = 8;
-    static const int  CLOCK_PIN = 10;
+    static const int  DATA_PIN = 8;   // green
+    static const int  CLOCK_PIN = 10; // blue
     static uint32_t   theDelay;
     static void speedTest() {
       Timer timer("speedTest()");
@@ -431,7 +431,7 @@ class App {
                     "clear, w,h=[width],[height], theDelay=[delayInMilliseconds], "
                     "showBuild";
     String configs[4] = {
-      "~2024Dec20:14:13", // date +"%Y%b%d:%H:%M"
+      "~2024Dec22:13:07", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
