@@ -321,67 +321,79 @@ int LEDStripWrapper::pixelToLedIndex[NUM_LEDS] = {
   240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255
 };
 
-#define BMP_TRUCK_WIDTH  19
-#define BMP_TRUCK_HEIGHT 16
+class Snowflake {
+  public:
+    int             currentX;
+    int             currentY;
+    int             velocityInMS;
+    unsigned long   lastRedraw;
+    Snowflake(int currentY, int currentX, int velocityInMS) {
+      this->currentX = currentX;
+      this->currentY = currentY;
+      this->velocityInMS = velocityInMS;
+      this->lastRedraw = 0;      
+    }
+    void dump() {
+      String s("x: ");
+      s.concat(currentX);
+      s.concat(", y: ");
+      s.concat(currentY);
+      s.concat(", v: ");
+      s.concat(velocityInMS);
+      s.concat(", last: ");
+      s.concat(lastRedraw);
+      Serial.println(s);
+    }
+};
 
-static uint8_t bmp_truck_data[] = {
-    0xFF,
-    0x01,
-    0xC1,
-    0x41,
-    0x41,
-    0x41,
-    0x71,
-    0x11,
-    0x11,
-    0x11,
-    0x11,
-    0x11,
-    0x71,
-    0x41,
-    0x41,
-    0xC1,
-    0x81,
-    0x01,
-    0xFF,
-    
-    0xFF,
-    0x80,
-    0x83,
-    0x82,
-    0x86,
-    0x8F,
-    0x8F,
-    0x86,
-    0x82,
-    0x82,
-    0x82,
-    0x86,
-    0x8F,
-    0x8F,
-    0x86,
-    0x83,
-    0x81,
-    0x80,
-    0xFF,
-}; // 38 bytes
-
+using namespace std;
 class XmasDisplayer {
   private:
-    unsigned long lastDisplay = 0;
-    Bitmap*       bitmap;
+    Bitmap*            bitmap;
+    vector<Snowflake>  snowflakes;
+    int                cycleTimeInSeconds;
+    int                startFlakeCount = 1;
+    int                endFlakeCount = 128;
+    long               minVelocity = 500;
+    int                maxVelocity = 1000;
+
+    Snowflake createSnowflake() {
+      int x = rand() % bitmap->width;
+      int v = rand() % minVelocity + (maxVelocity - minVelocity);
+      return Snowflake(x, -1,  v);
+    }
   public:
     int width = 16;
     int height = 16;
 
     XmasDisplayer() {
       bitmap = new Bitmap(width, height);
+      snowflakes.push_back(createSnowflake());
     }
     void display() {
-      unsigned long now = millis();
-      if (now < lastDisplay) {
-        lastDisplay = 0;
+      unsigned long now = millis();  
+        for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
+        if (now > it->lastRedraw + it->velocityInMS) {
+          if (it->currentY > -1) {
+            bitmap->clearBit(it->currentX, it->currentY);
+          }
+          it->currentY++;
+          if (it->currentY > bitmap->height - 1) {
+            // it = snowflakes.erase(it);
+
+            it->currentX = rand() % bitmap->width; // just get one to work first.
+            it->currentY = -1;
+            it->velocityInMS = rand() % minVelocity + (maxVelocity - minVelocity);
+            bitmap->setBit(it->currentX, it->currentY);
+            it->lastRedraw = now;
+
+          } else {
+            bitmap->setBit(it->currentX, it->currentY);
+            it->lastRedraw = now;
+          }
+        }
       }
+      LEDStripWrapper::showBitmap(bitmap);
     }
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       if (showOLED) {
@@ -447,15 +459,12 @@ class App {
                     "showOLED, showLEDStrip, showTextBitmap, "
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, w,h=[width],[height], theDelay=[delayInMilliseconds], "
-                    "showBuild, truckTest";
+                    "showBuild";
     String configs[4] = {
       "~2024Dec22:13:07", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
-    void truckTest() {
-      oledWrapper->rawBitmap(bmp_truck_data, BMP_TRUCK_WIDTH, BMP_TRUCK_HEIGHT);
-    }
     void showBuild() {
       oledWrapper->clear();
       oledWrapper->addText(0, 0, configs[0]);
@@ -514,8 +523,6 @@ class App {
           showTextBitmap = false;
         } else if (teststr.startsWith("showBuild")) {
           showBuild();
-        } else if (teststr.startsWith("truckTest")) {
-          truckTest();
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
@@ -541,12 +548,12 @@ class App {
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
       Serial.println(cmds.c_str());
-      // oledPanelTest();
     }
     void loop() {
       if (doSpeedTest)  { LEDStripWrapper::speedTest(); }
       if (doRampTest)   { LEDStripWrapper::rampTest(); }
       if (doBitmapTest) { xmasDisplayer.bitmapTest(showOLED, showLEDStrip, showTextBitmap); }
+      // xmasDisplayer.display();
       checkSerial();
     }
 };
