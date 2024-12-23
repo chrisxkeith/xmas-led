@@ -126,6 +126,25 @@ class Bitmap {
         Serial.println(msg);
       }
     }
+    void createDiagonals() {
+      clear();
+      for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+          if (x == y) {
+            setBit(x, y);
+            setBit(width - 1 - x, y);
+          }
+        }
+      }
+      for (int x = 1; x < width - 1; x++) {
+        setBit(x, 0);
+        setBit(x, height - 1);
+      }
+      for (int y = 1; y < height - 1; y++) {
+        setBit(0, y);
+        setBit(width - 1, y);
+      }
+    }
 };
 
 #include <SparkFun_Qwiic_OLED.h> //http://librarymanager/All#SparkFun_Qwiic_OLED
@@ -157,6 +176,20 @@ class OLEDWrapper {
       }
       clear();
     }
+    // Must convert to OLED bitmap format: vertical bytes, left-to-right, top-to-bottom
+    // Least-significant bit of first byte == (0,0).
+    void bitmap(Bitmap *pBitmap) {
+      std::memset(oledBitmap, 0b0000, SIZE_IN_BYTES);
+      for (int x = 0; x < pBitmap->width; x++) {
+        for (int y = 0; y < pBitmap->height; y++) {
+          if (pBitmap->getBit(x, y)) {
+            int   byteIndex = x + (y / 8 * kOLED1in3Width);
+            oledBitmap[byteIndex] |= (1 << (y % 8));
+          } 
+        }
+      }
+      rawBitmap(oledBitmap, kOLED1in3Width, kOLED1in3Height);
+    }
     void clear() {
       myOLED.erase();
       myOLED.display();
@@ -172,20 +205,6 @@ class OLEDWrapper {
       myOLED.erase();
       myOLED.bitmap(0, 0, pBitmap, width, height);
       myOLED.display();
-    }
-    // Must convert to OLED bitmap format: vertical bytes, left-to-right, top-to-bottom
-    // Least-significant bit of first byte == (0,0).
-    void bitmap(Bitmap *pBitmap) {
-      std::memset(oledBitmap, 0b0000, SIZE_IN_BYTES);
-      for (int x = 0; x < pBitmap->width; x++) {
-        for (int y = 0; y < pBitmap->height; y++) {
-          if (pBitmap->getBit(x, y)) {
-            int   byteIndex = (x * kOLED1in3Height / 8) + ((kOLED1in3Height - y) / 8);
-            oledBitmap[byteIndex] |= (1 << (y % 8));
-          } 
-        }
-      }
-      rawBitmap(oledBitmap, kOLED1in3Width, kOLED1in3Height);
     }
 };
 OLEDWrapper* oledWrapper = nullptr;
@@ -343,13 +362,8 @@ static uint8_t bmp_truck_data[] = {
 
 class XmasDisplayer {
   private:
-    const int     FRAME_RATE = 1000 / 24;
     unsigned long lastDisplay = 0;
     Bitmap*       bitmap;
-
-    void convertToOLED() {
-      // to come
-    }
   public:
     int width = 16;
     int height = 16;
@@ -361,9 +375,6 @@ class XmasDisplayer {
       unsigned long now = millis();
       if (now < lastDisplay) {
         lastDisplay = 0;
-      }
-      if (now - lastDisplay < FRAME_RATE) {
-        return;
       }
     }
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
@@ -382,22 +393,7 @@ class XmasDisplayer {
       bitmap->clear();
     }
     void bitmapTest(bool showOLED, bool showLEDStrip, bool showTextBitmap) {
-      for (int x = 0; x < width; x++) {
-        for (int y = 0; y < height; y++) {
-          if (x == y) {
-            bitmap->setBit(x, y);
-            bitmap->setBit(15 - x, y);
-          }
-        }
-      }
-      for (int x = 1; x < width - 1; x++) {
-        bitmap->setBit(x, 0);
-        bitmap->setBit(x, 15);
-      }
-      for (int y = 1; y < height - 1; y++) {
-        bitmap->setBit(0, y);
-        bitmap->setBit(15, y);
-      }
+      bitmap->createDiagonals();
       runTest("diagonals", showOLED, showLEDStrip, showTextBitmap);
     }
     void setWidthHeight(String s) {
@@ -458,6 +454,11 @@ class App {
       oledWrapper->clear();
       oledWrapper->addText(0, 0, configs[0]);
       oledWrapper->endDisplay();
+    }
+    void oledPanelTest() {
+      Bitmap* b = new Bitmap(128, 64);
+      b->createDiagonals();
+      oledWrapper->bitmap(b);
     }
     void checkSerial() {
       if (Serial.available() > 0) {
@@ -531,6 +532,7 @@ class App {
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
       Serial.println(cmds.c_str());
+      // oledPanelTest();
     }
     void loop() {
       if (doSpeedTest)  { LEDStripWrapper::speedTest(); }
