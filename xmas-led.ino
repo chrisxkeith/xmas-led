@@ -145,6 +145,14 @@ class Bitmap {
         setBit(width - 1, y);
       }
     }
+    void fill() {
+      clear();
+      for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+          setBit(x, y);
+        }
+      }
+    }
 };
 
 #include <SparkFun_Qwiic_OLED.h> //http://librarymanager/All#SparkFun_Qwiic_OLED
@@ -158,8 +166,6 @@ Qwiic1in3OLED myOLED; // 128x64
 
 class OLEDWrapper {
   private:
-    // kOLED1in3Width 128
-    // kOLED1in3Height 64
     const int SIZE_IN_BYTES = kOLED1in3Width * kOLED1in3Height / 8;
     uint8_t*  oledBitmap = new uint8_t[SIZE_IN_BYTES];
 
@@ -456,8 +462,11 @@ class App {
       oledWrapper->endDisplay();
     }
     void oledPanelTest() {
-      Bitmap* b = new Bitmap(128, 64);
+      Bitmap* b = new Bitmap(kOLED1in3Width, kOLED1in3Height);
       b->createDiagonals();
+      oledWrapper->bitmap(b);
+      delay(3000);
+      b->fill();
       oledWrapper->bitmap(b);
     }
     void checkSerial() {
