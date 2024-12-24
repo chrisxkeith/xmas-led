@@ -25,7 +25,6 @@ class Utils {
     // Modified from https://playground.arduino.cc/Main/I2cScanner/
     static void scanI2C() {
       Timer t("scanI2C()");
-      Serial.println("I2C: Scanning for devices...");    
       std::vector<byte> foundDevices;
       std::set<byte> errors;
       for( byte address = 1; address < 127; address++ ) {
@@ -50,8 +49,8 @@ class Utils {
         Serial.print(b, HEX);
         Serial.print(" ");
       }
-      Serial.println("");
-      String ss("I2C: Error numbers returned: ");
+      Serial.print(", ");
+      String ss("Error numbers returned: ");
       std::set<byte>::iterator itr;
       for (itr = errors.begin(); itr != errors.end(); itr++) {
         ss.concat(*itr);
@@ -93,10 +92,11 @@ class Bitmap {
         err.concat(x);
         err.concat(", y=");
         err.concat(y);
-        err.concat(" out of bounds ");
+        err.concat(" out of bounds (");
         err.concat(width);
         err.concat(",");
-        err.concat("height");
+        err.concat(height);
+        err.concat(")");
         Serial.println(err);
         return 1;
       }
@@ -338,7 +338,7 @@ class Snowflake {
     int             currentY;
     int             velocityInMS;
     unsigned long   lastRedraw;
-    Snowflake(int currentY, int currentX, int velocityInMS) {
+    Snowflake(int currentX, int currentY, int velocityInMS) {
       this->currentX = currentX;
       this->currentY = currentY;
       this->velocityInMS = velocityInMS;
@@ -367,7 +367,7 @@ class XmasDisplayer {
     int                endFlakeCount = 128;
     long               minVelocity = 500;
     int                maxVelocity = 1000;
-
+    
     Snowflake createSnowflake() {
       int x = rand() % bitmap->width;
       int v = rand() % minVelocity + (maxVelocity - minVelocity);
@@ -382,8 +382,8 @@ class XmasDisplayer {
       snowflakes.push_back(createSnowflake());
     }
     void display() {
-      unsigned long now = millis();  
-        for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
+      unsigned long now = millis();
+      for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
         if (now > it->lastRedraw + it->velocityInMS) {
           if (it->currentY > -1) {
             bitmap->clearBit(it->currentX, it->currentY);
@@ -403,9 +403,9 @@ class XmasDisplayer {
             it->lastRedraw = now;
           }
         }
-      }
+              }
       LEDStripWrapper::showBitmap(bitmap);
-    }
+          }
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       if (showOLED) {
         oledWrapper->bitmap(bitmap);
@@ -545,7 +545,7 @@ class App {
       Serial.println(cmds.c_str());
     }
     void loop() {
-      // xmasDisplayer.display();
+      xmasDisplayer.display();
       checkSerial();
     }
 };
