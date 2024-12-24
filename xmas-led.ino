@@ -365,13 +365,13 @@ class XmasDisplayer {
     bool               show = true;
     int                cycleTimeInSeconds = 30;
     int                startFlakeCount = 1;
-    int                endFlakeCount = 128;
-    long               minVelocity = 100;
-    int                maxVelocity = 500;
+    int                endFlakeCount = 64;
+    long               minVelocity = 300;
+    int                maxVelocity = 600;
     
     Snowflake createSnowflake() {
       int x = rand() % bitmap->width;
-      int v = rand() % minVelocity + (maxVelocity - minVelocity);
+      int v = rand() % (maxVelocity - minVelocity) + minVelocity;
       return Snowflake(x, -1,  v);
     }
   public:
@@ -397,16 +397,18 @@ class XmasDisplayer {
           if (it->currentY > bitmap->height - 1) {
             it->currentX = rand() % bitmap->width;
             it->currentY = -1;
-            it->velocityInMS = rand() % minVelocity + (maxVelocity - minVelocity);
+            it->velocityInMS = rand() % (maxVelocity - minVelocity) + minVelocity;
           }
           bitmap->setBit(it->currentX, it->currentY);
           it->lastRedraw = now;
         }
       }
-      int additionalFlakes = endFlakeCount / cycleTimeInSeconds - snowflakes.size();
-      for (int i = 0; i < additionalFlakes; i++) {
-        Snowflake s = createSnowflake();
-        snowflakes.push_back(s);
+      if (snowflakes.size() < endFlakeCount) {
+        int additionalFlakes = endFlakeCount / cycleTimeInSeconds;
+        for (int i = 0; i < additionalFlakes; i++) {
+          Snowflake s = createSnowflake();
+          snowflakes.push_back(s);
+        }
       }
     }
     void display() {
