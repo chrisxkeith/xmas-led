@@ -383,9 +383,11 @@ class XmasDisplayer {
       snowflakes.push_back(createSnowflake());
     }
     void clear() {
-      show = false;
-      bitmap->clear();
-      LEDStripWrapper::showBitmap(bitmap);
+      if (show) {
+        bitmap->clear();
+        LEDStripWrapper::showBitmap(bitmap);
+      }
+      show = ! show;
     }
     void setupDisplay(unsigned long now) {
       for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
