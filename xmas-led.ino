@@ -267,6 +267,22 @@ class LEDStripWrapper {
       delay(5000);
       clear();
     }
+    static void capacityTest() {
+      for (int t = 0; t < 15; t++) {
+        Bitmap b(16, 16);
+        for (int y = 0; y < t; y++) {
+          for (int x = 0; x < 16; x++) {
+            b.setBit(x, y);
+          }
+        }
+        for (int x = 0; x < 16; x++) {
+          b.setBit(x, 15);
+        }
+        showBitmap(&b);
+        delay(1000);
+        clear();
+      }
+    }
     static void clear() {
       for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = CRGB::Black;
@@ -482,7 +498,7 @@ class App {
                     "showOLED, showLEDStrip, showTextBitmap, "
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, w,h=[width],[height], theDelay=[delayInMilliseconds], "
-                    "showBuild";
+                    "showBuild, capacityTest";
     String configs[2] = {
       "~2024Dec24:09:11", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
@@ -536,6 +552,8 @@ class App {
           showTextBitmap = false;
         } else if (teststr.startsWith("showBuild")) {
           showBuild();
+        } else if (teststr.startsWith("capacityTest")) {
+          LEDStripWrapper::capacityTest();
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
