@@ -2,10 +2,29 @@
 #include <vector>
 #include <set>
 
+class Timer {
+  private:
+    String        msg;
+    unsigned long start;
+  public:
+    Timer(String msg) {
+      this->msg = msg;
+      start = millis();
+    }
+    ~Timer() {
+      unsigned long ms = millis() - start;
+      String msg(ms);
+      msg.concat(" milliseconds for ");
+      msg.concat(this->msg);
+      Serial.println(msg);
+    }
+};
+
 class Utils {
   public:
     // Modified from https://playground.arduino.cc/Main/I2cScanner/
     static void scanI2C() {
+      Timer t("scanI2C()");
       Serial.println("I2C: Scanning for devices...");    
       std::vector<byte> foundDevices;
       std::set<byte> errors;
@@ -39,24 +58,6 @@ class Utils {
         ss.concat(" ");
       }
       Serial.println(ss);
-    }
-};
-
-class Timer {
-  private:
-    String        msg;
-    unsigned long start;
-  public:
-    Timer(String msg) {
-      this->msg = msg;
-      start = millis();
-    }
-    ~Timer() {
-      unsigned long ms = millis() - start;
-      String msg(ms);
-      msg.concat(" milliseconds for ");
-      msg.concat(this->msg);
-      Serial.println(msg);
     }
 };
 
@@ -249,7 +250,8 @@ class LEDStripWrapper {
           leds[i] = c;
       }
       FastLED.show();  // All LEDs are now displayed.
-      delay(8);  // Wait 8 milliseconds until the next frame.
+      delay(5000);
+      clear();
     }
     static void clear() {
       for (int i = 0; i < NUM_LEDS; i++) {
@@ -397,7 +399,7 @@ class XmasDisplayer {
       }
       if (showLEDStrip) {
         LEDStripWrapper::showBitmap(bitmap);
-        delay(2000);
+        delay(5000);
         LEDStripWrapper::clear();
       }
       if (showTextBitmap) {
@@ -441,22 +443,18 @@ XmasDisplayer xmasDisplayer;
 
 class App {
   private:
-    bool  doSpeedTest = false;
-    bool  doRampTest = false;
-    bool  doBitmapTest = false;
     bool  showOLED = false;
-    bool  showLEDStrip = false;
+    bool  showLEDStrip = true;
     bool  showTextBitmap = false;
 
-    String cmds = "startSpeedTest, stopSpeedTest, "
-                    "startRampTest, stopRampTest, runBitmapTest, "
-                    "startBitmapTest, stopBitmapTest, "
+    String cmds = "runSpeedTest, "
+                    "runRampTest, runBitmapTest, "
                     "showOLED, showLEDStrip, showTextBitmap, "
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, w,h=[width],[height], theDelay=[delayInMilliseconds], "
                     "showBuild";
-    String configs[4] = {
-      "~2024Dec22:13:07", // date +"%Y%b%d:%H:%M"
+    String configs[2] = {
+      "~2024Dec24:09:11", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
@@ -477,22 +475,10 @@ class App {
       if (Serial.available() > 0) {
         String teststr = Serial.readString();  // read until timeout
         teststr.trim();                        // remove any \r \n whitespace at the end of the String
-        if (teststr.equals("startSpeedTest")) {
-          doSpeedTest = true;
-        } else if (teststr.equals("stopSpeedTest")) {
-          doSpeedTest = false;
-          LEDStripWrapper::clear();
-        } else if (teststr.equals("startRampTest")) {
-          doRampTest = true;
-        } else if (teststr.equals("stopRampTest")) {
-          doRampTest = false;
-          LEDStripWrapper::clear();
-        } else if (teststr.equals("startBitmapTest")) {
-          doBitmapTest = true;
-        } else if (teststr.equals("stopBitmapTest")) {
-          doBitmapTest = false;
-          oledWrapper->clear();
-          LEDStripWrapper::clear();
+        if (teststr.equals("runSpeedTest")) {
+          LEDStripWrapper::speedTest();
+        } else if (teststr.equals("runRampTest")) {
+          LEDStripWrapper::rampTest();
         } else if (teststr.equals("runBitmapTest")) {
           xmasDisplayer.bitmapTest(showOLED, showLEDStrip, showTextBitmap);
         } else if (teststr.equals("clear")) {
@@ -535,19 +521,13 @@ class App {
       Serial.println("setup() started.");
       Wire.begin();
       FastLED.addLeds<APA102, LEDStripWrapper::DATA_PIN, LEDStripWrapper::CLOCK_PIN, BGR>(leds, NUM_LEDS);
-      {
-        Timer t("LEDStripWrapper::startup()");
-        LEDStripWrapper::startup();
-      }
-      // Utils::scanI2C();
+      LEDStripWrapper::startup();
+      Utils::scanI2C();
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
       Serial.println(cmds.c_str());
     }
     void loop() {
-      if (doSpeedTest)  { LEDStripWrapper::speedTest(); }
-      if (doRampTest)   { LEDStripWrapper::rampTest(); }
-      if (doBitmapTest) { xmasDisplayer.bitmapTest(showOLED, showLEDStrip, showTextBitmap); }
       // xmasDisplayer.display();
       checkSerial();
     }
