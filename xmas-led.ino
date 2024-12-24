@@ -362,11 +362,12 @@ class XmasDisplayer {
   private:
     Bitmap*            bitmap;
     vector<Snowflake>  snowflakes;
-    int                cycleTimeInSeconds;
+    bool               show = true;
+    int                cycleTimeInSeconds = 30;
     int                startFlakeCount = 1;
     int                endFlakeCount = 128;
-    long               minVelocity = 500;
-    int                maxVelocity = 1000;
+    long               minVelocity = 100;
+    int                maxVelocity = 500;
     
     Snowflake createSnowflake() {
       int x = rand() % bitmap->width;
@@ -381,8 +382,12 @@ class XmasDisplayer {
       bitmap = new Bitmap(width, height);
       snowflakes.push_back(createSnowflake());
     }
-    void display() {
-      unsigned long now = millis();
+    void clear() {
+      show = false;
+      bitmap->clear();
+      LEDStripWrapper::showBitmap(bitmap);
+    }
+    void setupDisplay(unsigned long now) {
       for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
         if (now > it->lastRedraw + it->velocityInMS) {
           if (it->currentY > -1) {
@@ -390,22 +395,27 @@ class XmasDisplayer {
           }
           it->currentY++;
           if (it->currentY > bitmap->height - 1) {
-            // it = snowflakes.erase(it);
-
-            it->currentX = rand() % bitmap->width; // just get one to work first.
+            it->currentX = rand() % bitmap->width;
             it->currentY = -1;
             it->velocityInMS = rand() % minVelocity + (maxVelocity - minVelocity);
-            bitmap->setBit(it->currentX, it->currentY);
-            it->lastRedraw = now;
-
-          } else {
-            bitmap->setBit(it->currentX, it->currentY);
-            it->lastRedraw = now;
           }
+          bitmap->setBit(it->currentX, it->currentY);
+          it->lastRedraw = now;
         }
-              }
-      LEDStripWrapper::showBitmap(bitmap);
-          }
+      }
+      int additionalFlakes = endFlakeCount / cycleTimeInSeconds - snowflakes.size();
+      for (int i = 0; i < additionalFlakes; i++) {
+        Snowflake s = createSnowflake();
+        snowflakes.push_back(s);
+      }
+    }
+    void display() {
+      if (show) {
+        unsigned long now = millis();
+        setupDisplay(now);
+        LEDStripWrapper::showBitmap(bitmap);
+      }
+    }
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       if (showOLED) {
         oledWrapper->bitmap(bitmap);
@@ -501,6 +511,7 @@ class App {
         } else if (teststr.equals("clear")) {
           LEDStripWrapper::clear();
           oledWrapper->clear();
+          xmasDisplayer.clear();
         } else if (teststr.startsWith("w,h=")) {
           xmasDisplayer.setWidthHeight(teststr);
         } else if (teststr.startsWith("theDelay=")) {
