@@ -293,12 +293,7 @@ class LEDStripWrapper {
     }
     static void startup() {
       clear();
-      leds[0] = CRGB::White;
-      leds[NUM_LEDS - 1] = CRGB::White;
-      FastLED.show();
-      leds[0] = CRGB::Black;
-      leds[NUM_LEDS - 1] = CRGB::Black;
-      FastLED.show();
+      speedTest();
     }
 };
 uint32_t LEDStripWrapper::theDelay = 0;
