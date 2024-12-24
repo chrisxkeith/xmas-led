@@ -222,6 +222,10 @@ const int     LEDS_HEIGHT = 16;
 const int     NUM_LEDS = LEDS_WIDTH * LEDS_HEIGHT;
 CRGB          leds[NUM_LEDS] = {0};     // Software gamma mode.
 
+#define HALF_WHITE 0x808080
+#define QUARTER_WHITE 0x404040
+#define EIGHTH_WHITE 0x202020
+#define WHITENESS EIGHTH_WHITE
 class LEDStripWrapper {
   private:
     static int pixelToLedIndex[NUM_LEDS];
@@ -232,7 +236,7 @@ class LEDStripWrapper {
     static void speedTest() {
       Timer timer("speedTest()");
       for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = CRGB::White;
+        leds[i] = WHITENESS;
         FastLED.show();
         delay(theDelay);
         leds[i] = CRGB::Black;
@@ -301,7 +305,7 @@ class LEDStripWrapper {
       for (int x = 0; x < pBitmap->width; x++) {
         for (int y = 0; y < pBitmap->height; y++) {
           if (pBitmap->getBit(x, y)) {
-            leds[pixelToLedIndex[(y * LEDS_WIDTH) + x]] = CRGB::White;
+            leds[pixelToLedIndex[(y * LEDS_WIDTH) + x]] = WHITENESS;
           } else {
             leds[pixelToLedIndex[(y * LEDS_WIDTH) + x]] = CRGB::Black;
           }
