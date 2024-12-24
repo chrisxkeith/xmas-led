@@ -239,12 +239,26 @@ class LEDStripWrapper {
         FastLED.show();
       }
     }
-    static void rampTest() {
-      Timer timer("rampTest()");
+    static void rampTestForward() {
+      Timer timer("rampTestForward()");
       // Draw a linear ramp of brightnesses to showcase the difference between
       // the HD and non-HD mode.
       const int NUM_TO_TEST = NUM_LEDS;
       for (int i = 0; i < NUM_TO_TEST; i++) {
+          int brightness = map(i, 0, NUM_TO_TEST - 1, 0, 255);
+          CRGB c(brightness, brightness, brightness);  // Just make a shade of white.
+          leds[i] = c;
+      }
+      FastLED.show();  // All LEDs are now displayed.
+      delay(5000);
+      clear();
+    }
+    static void rampTestBackward() {
+      Timer timer("rampTestBackward()");
+      // Draw a linear ramp of brightnesses to showcase the difference between
+      // the HD and non-HD mode.
+      const int NUM_TO_TEST = NUM_LEDS;
+      for (int i = NUM_TO_TEST - 1; i > -1; i--) {
           int brightness = map(i, 0, NUM_TO_TEST - 1, 0, 255);
           CRGB c(brightness, brightness, brightness);  // Just make a shade of white.
           leds[i] = c;
@@ -410,6 +424,8 @@ class XmasDisplayer {
     void bitmapTest(bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       bitmap->createDiagonals();
       runTest("diagonals", showOLED, showLEDStrip, showTextBitmap);
+      bitmap->fill();
+      runTest("fill", showOLED, showLEDStrip, showTextBitmap);
     }
     void setWidthHeight(String s) {
       int w;
@@ -478,7 +494,8 @@ class App {
         if (teststr.equals("runSpeedTest")) {
           LEDStripWrapper::speedTest();
         } else if (teststr.equals("runRampTest")) {
-          LEDStripWrapper::rampTest();
+          LEDStripWrapper::rampTestForward();
+          LEDStripWrapper::rampTestBackward();
         } else if (teststr.equals("runBitmapTest")) {
           xmasDisplayer.bitmapTest(showOLED, showLEDStrip, showTextBitmap);
         } else if (teststr.equals("clear")) {
