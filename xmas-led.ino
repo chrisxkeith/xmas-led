@@ -378,20 +378,26 @@ class Snowflake {
 };
 
 using namespace std;
+#include <bitset>
+
 class XmasDisplayer {
   private:
     Bitmap*            bitmap;
     vector<Snowflake>  snowflakes;
     bool               show = true;
-    int                cycleTimeInSeconds = 30;
-    int                startFlakeCount = 1;
-    int                endFlakeCount = 64;
+    int                endFlakeCount = 16;
     long               minVelocity = 300;
-    int                maxVelocity = 600;
+    int                maxVelocity = 1500;
+    unsigned long      lastAddedTime = 0;
+    std::bitset<16>    xcoords{0};
     
     Snowflake createSnowflake() {
-      int x = rand() % bitmap->width;
       int v = rand() % (maxVelocity - minVelocity) + minVelocity;
+      int x = rand() % 16;
+      while (xcoords[x]) {
+        x = rand() % 16;
+      }
+      xcoords[x] = true;
       return Snowflake(x, -1,  v);
     }
   public:
@@ -417,7 +423,6 @@ class XmasDisplayer {
           }
           it->currentY++;
           if (it->currentY > bitmap->height - 1) {
-            it->currentX = rand() % bitmap->width;
             it->currentY = -1;
             it->velocityInMS = rand() % (maxVelocity - minVelocity) + minVelocity;
           }
@@ -425,11 +430,10 @@ class XmasDisplayer {
           it->lastRedraw = now;
         }
       }
-      if (snowflakes.size() < endFlakeCount) {
-        int additionalFlakes = endFlakeCount / cycleTimeInSeconds;
-        for (int i = 0; i < additionalFlakes; i++) {
-          Snowflake s = createSnowflake();
-          snowflakes.push_back(s);
+      if (now > lastAddedTime + 1000) {
+        if (snowflakes.size() < endFlakeCount) {
+            snowflakes.push_back(createSnowflake());
+            lastAddedTime = now;
         }
       }
     }
