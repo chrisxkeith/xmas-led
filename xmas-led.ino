@@ -410,8 +410,7 @@ class XmasDisplayer {
     }
     void clear() {
       if (show) {
-        bitmap->clear();
-        LEDStripWrapper::showBitmap(bitmap);
+        LEDStripWrapper::clear();
       }
       show = ! show;
     }
