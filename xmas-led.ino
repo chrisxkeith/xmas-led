@@ -465,11 +465,15 @@ class XmasDisplayer {
     void snow(unsigned long now) {
       for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
         if (now > it->lastRedraw + it->velocityInMS) {
-          if (it->currentY > -1) {
+          if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
             bitmap->clearBit(it->currentX, it->currentY);
           }
           it->currentY++;
-          if (it->currentY > bitmap->height - 1) {
+          if (it->currentY > snowLevel[it->currentX] - 1) {
+            snowLevel[it->currentX]--;
+            if (snowLevel[it->currentX] < HEIGHT / 2) { // when snow is halfway up the display
+              snowing = false;
+            }
             it->currentY = -1;
             it->velocityInMS = rand() % (maxVelocity - minVelocity) + minVelocity;
           }
