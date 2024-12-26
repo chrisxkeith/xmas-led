@@ -414,8 +414,8 @@ class XmasDisplayer {
     vector<Snowflake>  snowflakes;
     bool               show = true;
     int                endFlakeCount = 16;
-    long               minVelocity = 300;
-    int                maxVelocity = 1500;
+    long               minVelocity = 600;
+    int                maxVelocity = 900;
     unsigned long      lastAddedTime = 0;
     RandomDistributor  flakeDistributor;
     RandomDistributor  meltDistributor;
@@ -427,10 +427,13 @@ class XmasDisplayer {
       return Snowflake(flakeDistributor.getNextCoord(), -1,  v);
     }
     void restart() {
+      flakeDistributor.reset();
       meltDistributor.reset();
+      snowflakes.clear();
       for (int i = 0; i < WIDTH; i++) {
         snowLevel[i] = HEIGHT;
       }
+      LEDStripWrapper::clear();
       snowing = true;
     }
   public:
@@ -454,12 +457,13 @@ class XmasDisplayer {
         int xx = meltDistributor.getNextCoord();
         if (snowLevel[xx] < HEIGHT) {
           bitmap->clearBit(xx, snowLevel[xx]++);
-          delay(rand() % 1000);
           snowLeft = true;
         }
       }
       if (! snowLeft) {
         restart();
+      } else {
+        delay(1500);
       }
     }
     void snow(unsigned long now) {
@@ -471,7 +475,7 @@ class XmasDisplayer {
           it->currentY++;
           if (it->currentY > snowLevel[it->currentX] - 1) {
             snowLevel[it->currentX]--;
-            if (snowLevel[it->currentX] < HEIGHT / 2) { // when snow is halfway up the display
+            if (snowLevel[it->currentX] < 3 * HEIGHT / 4) { // when snow is quarter way up the display
               snowing = false;
             }
             it->currentY = -1;
