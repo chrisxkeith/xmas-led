@@ -384,16 +384,23 @@ class RandomDistributor {
   private:
     const static int      N_COORDS = 16;
     std::bitset<N_COORDS> xcoords{0};
+    int                   calledCount = 0;
   public:
     void reset() {
       xcoords.reset();
+      calledCount = 0;
     }
     int getNextCoord() {
+      if (calledCount >= N_COORDS) {
+        String err("RandomDistributor: called too many times");
+        return rand() % N_COORDS;
+      }
       int x = rand() % N_COORDS;
       while (xcoords[x]) {
         x = rand() % N_COORDS;
       }
       xcoords[x] = true;
+      calledCount++;
       return x;
     }
 };
