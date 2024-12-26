@@ -380,8 +380,35 @@ class Snowflake {
 using namespace std;
 #include <bitset>
 
+class RandomDistributor {
+  private:
+    const static int      N_COORDS = 16;
+    std::bitset<N_COORDS> xcoords{0};
+  public:
+    void reset() {
+      xcoords.reset();
+    }
+    int getNextCoord() {
+      int x = rand() % N_COORDS;
+      int c = 0;
+      while (xcoords[x]) {
+        if (++c >= N_COORDS) {
+          Serial.println("Overran RandomDistributor!");
+          reset(); // restart from blank state.
+          break;
+        }
+        x = rand() % N_COORDS;
+      }
+      xcoords[x] = true;
+      return x;
+    }
+};
+
 class XmasDisplayer {
   private:
+    const int         WIDTH = 16;
+    const int         HEIGHT = 16;
+
     Bitmap*            bitmap;
     vector<Snowflake>  snowflakes;
     bool               show = true;
@@ -389,23 +416,15 @@ class XmasDisplayer {
     long               minVelocity = 300;
     int                maxVelocity = 1500;
     unsigned long      lastAddedTime = 0;
-    std::bitset<16>    xcoords{0};
+    RandomDistributor  flakeDistributor;
     
     Snowflake createSnowflake() {
       int v = rand() % (maxVelocity - minVelocity) + minVelocity;
-      int x = rand() % 16;
-      while (xcoords[x]) {
-        x = rand() % 16;
-      }
-      xcoords[x] = true;
-      return Snowflake(x, -1,  v);
+      return Snowflake(flakeDistributor.getNextCoord(), -1,  v);
     }
   public:
-    int width = 16;
-    int height = 16;
-
     XmasDisplayer() {
-      bitmap = new Bitmap(width, height);
+      bitmap = new Bitmap(WIDTH, HEIGHT);
       snowflakes.push_back(createSnowflake());
     }
     void clear() {
@@ -464,33 +483,6 @@ class XmasDisplayer {
       bitmap->fill();
       runTest("fill", showOLED, showLEDStrip, showTextBitmap);
     }
-    void setWidthHeight(String s) {
-      int w;
-      int h;
-      int ret = sscanf(s.c_str(), "w,h=%d,%d", &w, &h);
-      width = w;
-      height = h;
-      if (ret != 2) {
-        String err("Error parsing: ");
-        err.concat(s);
-        err.concat(" (Expected w,h=[width],[height]) Parsed ");
-        err.concat(ret);
-        err.concat(" items");
-        Serial.println(err);
-      } else {
-        if (width % 8 != 0) {
-          width = ((width / 8) + 1) * 8;
-        }
-        if (height % 8 != 0) {
-          height = ((height / 8) + 1) * 8;
-        }
-        String msg("width = ");
-        msg.concat(width);
-        msg.concat(" , height = ");
-        msg.concat(height);
-        Serial.println(msg);
-      }
-    }
 };
 XmasDisplayer xmasDisplayer;
 
@@ -504,7 +496,7 @@ class App {
                     "runRampTest, runBitmapTest, "
                     "showOLED, showLEDStrip, showTextBitmap, "
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
-                    "clear, w,h=[width],[height], theDelay=[delayInMilliseconds], "
+                    "clear, theDelay=[delayInMilliseconds], "
                     "showBuild, capacityTest";
     String configs[2] = {
       "~2024Dec24:09:11", // date +"%Y%b%d:%H:%M"
@@ -539,8 +531,6 @@ class App {
           LEDStripWrapper::clear();
           oledWrapper->clear();
           xmasDisplayer.clear();
-        } else if (teststr.startsWith("w,h=")) {
-          xmasDisplayer.setWidthHeight(teststr);
         } else if (teststr.startsWith("theDelay=")) {
           LEDStripWrapper::setDelay(teststr);
         } else if (teststr.startsWith("showOLED")) {
