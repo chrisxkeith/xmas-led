@@ -390,13 +390,7 @@ class RandomDistributor {
     }
     int getNextCoord() {
       int x = rand() % N_COORDS;
-      int c = 0;
       while (xcoords[x]) {
-        if (++c >= N_COORDS) {
-          Serial.println("Overran RandomDistributor!");
-          reset(); // restart from blank state.
-          break;
-        }
         x = rand() % N_COORDS;
       }
       xcoords[x] = true;
@@ -406,8 +400,8 @@ class RandomDistributor {
 
 class XmasDisplayer {
   private:
-    const int         WIDTH = 16;
-    const int         HEIGHT = 16;
+    const static int   WIDTH = 16;
+    const static int   HEIGHT = 16;
 
     Bitmap*            bitmap;
     vector<Snowflake>  snowflakes;
@@ -417,15 +411,25 @@ class XmasDisplayer {
     int                maxVelocity = 1500;
     unsigned long      lastAddedTime = 0;
     RandomDistributor  flakeDistributor;
-    
+    RandomDistributor  meltDistributor;
+    int                snowLevel[WIDTH];
+    bool               snowing = true;
+
     Snowflake createSnowflake() {
       int v = rand() % (maxVelocity - minVelocity) + minVelocity;
       return Snowflake(flakeDistributor.getNextCoord(), -1,  v);
     }
+    void restart() {
+      meltDistributor.reset();
+      for (int i = 0; i < WIDTH; i++) {
+        snowLevel[i] = HEIGHT;
+      }
+      snowing = true;
+    }
   public:
     XmasDisplayer() {
       bitmap = new Bitmap(WIDTH, HEIGHT);
-      snowflakes.push_back(createSnowflake());
+      restart();
     }
     void clear() {
       if (show) {
@@ -433,7 +437,25 @@ class XmasDisplayer {
       }
       show = ! show;
     }
-    void setupDisplay(unsigned long now) {
+    void melt(unsigned long now) {
+      for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
+        bitmap->clearBit(it->currentX, it->currentY);
+      }
+      snowflakes.clear();
+      bool snowLeft = false;
+      for (int x = 0; x < WIDTH; x++) {
+        int xx = meltDistributor.getNextCoord();
+        if (snowLevel[xx] < HEIGHT) {
+          bitmap->clearBit(xx, snowLevel[xx]++);
+          delay(rand() % 1000);
+          snowLeft = true;
+        }
+      }
+      if (! snowLeft) {
+        restart();
+      }
+    }
+    void snow(unsigned long now) {
       for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
         if (now > it->lastRedraw + it->velocityInMS) {
           if (it->currentY > -1) {
@@ -449,7 +471,7 @@ class XmasDisplayer {
         }
       }
       if (now > lastAddedTime + 1000) {
-        if (snowflakes.size() < endFlakeCount) {
+        if (snowflakes.size() < WIDTH) {
             snowflakes.push_back(createSnowflake());
             lastAddedTime = now;
         }
@@ -458,7 +480,11 @@ class XmasDisplayer {
     void display() {
       if (show) {
         unsigned long now = millis();
-        setupDisplay(now);
+        if (snowing) {
+          snow(now);
+        } else {
+          melt(now);
+        }
         LEDStripWrapper::showBitmap(bitmap);
       }
     }
