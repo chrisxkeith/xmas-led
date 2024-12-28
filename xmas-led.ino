@@ -230,11 +230,11 @@ class LEDStripWrapper {
   private:
     static int pixelToLedIndex[NUM_LEDS];
   public:
-    static const int  DATA_PIN = 8;   // green
-    static const int  CLOCK_PIN = 10; // blue
+    static const int  DATA_PIN = 8;   // green wire
+    static const int  CLOCK_PIN = 10; // blue wire
     static uint32_t   theDelay;
     static void speedTest() {
-      Timer timer("speedTest()");
+      // Timer timer("speedTest()");
       for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = WHITENESS;
         FastLED.show();
@@ -435,12 +435,20 @@ class XmasDisplayer {
         melting
     };
     SnowState          snowState = snowing;
+    unsigned long      lastRestart = 0;
 
     Snowflake createSnowflake() {
       int v = rand() % (maxVelocity - minVelocity) + minVelocity;
       return Snowflake(flakeDistributor.getNextCoord(), -1,  v);
     }
     void restart() {
+      if (lastRestart > 0) {
+        unsigned long seconds = (millis() - lastRestart) / 1000;
+        String s("cycle time in seconds: ");
+        s.concat(seconds);
+        Serial.println(s);
+      }
+      lastRestart = millis();
       flakeDistributor.reset();
       meltDistributor.reset();
       snowflakes.clear();
@@ -494,7 +502,7 @@ class XmasDisplayer {
           } else {
             it->currentY++;
             if (it->currentY > snowLevel[it->currentX] - 1) {
-              if (snowLevel[it->currentX] < 3 * HEIGHT / 4) { // when snow is quarter way up the display
+              if (snowLevel[it->currentX] < HEIGHT - 3) { // 3 rows of snow on the ground
                 snowState = stopping;
                 break; // no more snow
               }
@@ -643,10 +651,10 @@ class App {
       Wire.begin();
       FastLED.addLeds<APA102, LEDStripWrapper::DATA_PIN, LEDStripWrapper::CLOCK_PIN, BGR>(leds, NUM_LEDS);
       LEDStripWrapper::startup();
-      Utils::scanI2C();
+      // Utils::scanI2C();
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
-      Serial.println(cmds.c_str());
+      // Serial.println(cmds.c_str());
     }
     void loop() {
       xmasDisplayer.display();
