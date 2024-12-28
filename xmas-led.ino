@@ -417,10 +417,16 @@ class XmasDisplayer {
     long               minVelocity = 600;
     int                maxVelocity = 900;
     unsigned long      lastAddedTime = 0;
+    unsigned long      lastMeltTime = 0;
     RandomDistributor  flakeDistributor;
     RandomDistributor  meltDistributor;
     int                snowLevel[WIDTH];
-    bool               snowing = true;
+    enum SnowState {
+        snowing,
+        stopping,
+        melting
+    };
+    SnowState          snowState = snowing;
 
     Snowflake createSnowflake() {
       int v = rand() % (maxVelocity - minVelocity) + minVelocity;
@@ -434,7 +440,7 @@ class XmasDisplayer {
         snowLevel[i] = HEIGHT;
       }
       LEDStripWrapper::clear();
-      snowing = true;
+      snowState = snowing;
     }
   public:
     XmasDisplayer() {
@@ -448,22 +454,24 @@ class XmasDisplayer {
       show = ! show;
     }
     void melt(unsigned long now) {
-      for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
-        bitmap->clearBit(it->currentX, it->currentY);
-      }
-      snowflakes.clear();
-      bool snowLeft = false;
-      for (int x = 0; x < WIDTH; x++) {
-        int xx = meltDistributor.getNextCoord();
-        if (snowLevel[xx] < HEIGHT) {
-          bitmap->clearBit(xx, snowLevel[xx]++);
-          snowLeft = true;
-        }
-      }
-      if (! snowLeft) {
-        restart();
+      if (lastMeltTime == 0) {
+        lastMeltTime = now;
       } else {
-        delay(1500);
+        if (now > lastMeltTime - 500) {
+          bool snowLeft = false;
+          for (int x = 0; x < WIDTH; x++) {
+            int xx = meltDistributor.getNextCoord();
+            if (snowLevel[xx] < HEIGHT) {
+              bitmap->clearBit(xx, snowLevel[xx]++);
+              lastMeltTime = millis();
+              snowLeft = true;
+              snowLevel[xx] = HEIGHT;
+            }
+          }
+          if (! snowLeft) {
+            restart();
+          }
+      }
       }
     }
     void snow(unsigned long now) {
@@ -472,20 +480,27 @@ class XmasDisplayer {
           if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
             bitmap->clearBit(it->currentX, it->currentY);
           }
-          it->currentY++;
-          if (it->currentY > snowLevel[it->currentX] - 1) {
-            snowLevel[it->currentX]--;
-            if (snowLevel[it->currentX] < 3 * HEIGHT / 4) { // when snow is quarter way up the display
-              snowing = false;
+          if (snowState == stopping) {
+            it = snowflakes.erase(it);
+            if (it == snowflakes.end()) {
+              break;
             }
-            it->currentY = -1;
-            it->velocityInMS = rand() % (maxVelocity - minVelocity) + minVelocity;
+          } else {
+            it->currentY++;
+            if (it->currentY > snowLevel[it->currentX] - 1) {
+              snowLevel[it->currentX]--;
+              if (snowLevel[it->currentX] < 3 * HEIGHT / 4) { // when snow is quarter way up the display
+                snowState = stopping;
+              }
+              it->currentY = -1;
+              it->velocityInMS = rand() % (maxVelocity - minVelocity) + minVelocity;
+            }
+            bitmap->setBit(it->currentX, it->currentY);
+            it->lastRedraw = now;
           }
-          bitmap->setBit(it->currentX, it->currentY);
-          it->lastRedraw = now;
         }
       }
-      if (now > lastAddedTime + 1000) {
+      if (snowState == snowing && now > lastAddedTime + 500) {
         if (snowflakes.size() < WIDTH) {
             snowflakes.push_back(createSnowflake());
             lastAddedTime = now;
@@ -495,10 +510,19 @@ class XmasDisplayer {
     void display() {
       if (show) {
         unsigned long now = millis();
-        if (snowing) {
-          snow(now);
-        } else {
-          melt(now);
+        switch (snowState) {
+          case snowing:
+            snow(now);
+            break;
+          case stopping:
+            snow(now);
+            if (snowflakes.size() == 0) {
+              snowState = melting;
+            }
+            break;
+          case melting:
+            melt(now);
+            break;
         }
         LEDStripWrapper::showBitmap(bitmap);
       }
@@ -540,7 +564,7 @@ class App {
                     "clear, theDelay=[delayInMilliseconds], "
                     "showBuild, capacityTest";
     String configs[2] = {
-      "~2024Dec24:09:11", // date +"%Y%b%d:%H:%M"
+      "~2024Dec28:10:04", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
