@@ -385,15 +385,23 @@ class RandomDistributor {
     const static int      N_COORDS = 16;
     std::bitset<N_COORDS> xcoords{0};
     int                   calledCount = 0;
+    bool                  doReset;
   public:
+    RandomDistributor(bool doReset = false) {
+      this->doReset = doReset;
+    }
     void reset() {
       xcoords.reset();
       calledCount = 0;
     }
     int getNextCoord() {
       if (calledCount >= N_COORDS) {
-        String err("RandomDistributor: called too many times");
-        return rand() % N_COORDS;
+        if (doReset) {
+          reset();
+        } else {
+          String err("RandomDistributor: called too many times");
+          return rand() % N_COORDS;
+        }
       }
       int x = rand() % N_COORDS;
       while (xcoords[x]) {
@@ -419,7 +427,7 @@ class XmasDisplayer {
     unsigned long      lastAddedTime = 0;
     unsigned long      lastMeltTime = 0;
     RandomDistributor  flakeDistributor;
-    RandomDistributor  meltDistributor;
+    RandomDistributor  meltDistributor = RandomDistributor(true);
     int                snowLevel[WIDTH];
     enum SnowState {
         snowing,
@@ -454,24 +462,22 @@ class XmasDisplayer {
       show = ! show;
     }
     void melt(unsigned long now) {
-      if (lastMeltTime == 0) {
-        lastMeltTime = now;
-      } else {
-        if (now > lastMeltTime - 500) {
-          bool snowLeft = false;
-          for (int x = 0; x < WIDTH; x++) {
-            int xx = meltDistributor.getNextCoord();
-            if (snowLevel[xx] < HEIGHT) {
-              bitmap->clearBit(xx, snowLevel[xx]++);
-              lastMeltTime = millis();
-              snowLeft = true;
-              snowLevel[xx] = HEIGHT;
-            }
-          }
-          if (! snowLeft) {
-            restart();
-          }
+      if (now > lastMeltTime + 100) {
+        int xx = meltDistributor.getNextCoord();
+        if (snowLevel[xx] < HEIGHT) {
+          bitmap->clearBit(xx, snowLevel[xx]++);
+          lastMeltTime = millis();
+        }
       }
+      bool snowLeft = false;
+      for (int x = 0; x < WIDTH; x++) {
+        if (snowLevel[x] < HEIGHT) {
+          snowLeft = true;
+          break;  
+        }      
+      }
+      if (! snowLeft) {
+        restart();
       }
     }
     void snow(unsigned long now) {
@@ -488,10 +494,11 @@ class XmasDisplayer {
           } else {
             it->currentY++;
             if (it->currentY > snowLevel[it->currentX] - 1) {
-              snowLevel[it->currentX]--;
               if (snowLevel[it->currentX] < 3 * HEIGHT / 4) { // when snow is quarter way up the display
                 snowState = stopping;
+                break; // no more snow
               }
+              snowLevel[it->currentX]--;
               it->currentY = -1;
               it->velocityInMS = rand() % (maxVelocity - minVelocity) + minVelocity;
             }
@@ -518,6 +525,8 @@ class XmasDisplayer {
             snow(now);
             if (snowflakes.size() == 0) {
               snowState = melting;
+              delay(2000);
+              lastMeltTime = millis();
             }
             break;
           case melting:
