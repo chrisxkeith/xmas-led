@@ -502,7 +502,7 @@ class XmasDisplayer {
           } else {
             it->currentY++;
             if (it->currentY > snowLevel[it->currentX] - 1) {
-              if (snowLevel[it->currentX] < HEIGHT - 3) { // 3 rows of snow on the ground
+              if (snowLevel[it->currentX] < HEIGHT - 2) { // a few rows of snow on the ground
                 snowState = stopping;
                 break; // no more snow
               }
