@@ -84,6 +84,17 @@ class Bitmap {
     void clear() {
       std::memset(bitmap, 0b0000, sizeInBytes());
     }
+    int bitCount() {
+      int ret = 0;
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+          if (getBit(x, y)) {
+            ret++;
+          }
+        }
+      }
+      return ret;
+    }
     int sizeInBytes() { return width * height / 8; }
     int calcByteIndex(int x, int y) {
       int i = (x / 8) + (y * width / 8);
@@ -436,10 +447,50 @@ class XmasDisplayer {
     };
     SnowState          snowState = snowing;
     unsigned long      lastRestart = 0;
+    const int          BETWEEN_STATE_WAIT = 2000;      
 
     Snowflake createSnowflake() {
       int v = rand() % (maxVelocity - minVelocity) + minVelocity;
       return Snowflake(flakeDistributor.getNextCoord(), -1,  v);
+    }
+    String snowStateName(SnowState ss) {
+      switch (ss) {
+        case snowing:  return "snowing";
+        case stopping: return "stopping";
+        case melting:  return "melting";
+        default:       return "Unknown SnowState!";
+      }
+    }
+    void changeState(SnowState ss) {
+      String s("Changing state from: ");
+      s.concat(snowStateName(snowState));
+      s.concat(" to: ");
+      s.concat(snowStateName(ss));
+      Serial.println(s);
+      snowState = ss;
+    }
+    void checkState(String s) {
+      if (snowflakes.size() > 0) {
+        String err(s);
+        err.concat(": snowflakes left: ");
+        err.concat(snowflakes.size());
+        snowflakes.clear();
+      }
+      if (bitmap->bitCount() > 0) {
+        String err(s);
+        err.concat(": bits left: ");
+        err.concat(bitmap->bitCount());
+        bitmap->clear();
+      }
+    }
+    void start() {
+      lastRestart = millis();
+      flakeDistributor.reset();
+      meltDistributor.reset();
+      for (int i = 0; i < WIDTH; i++) {
+        snowLevel[i] = HEIGHT;
+      }
+      LEDStripWrapper::clear();
     }
     void restart() {
       if (lastRestart > 0) {
@@ -448,20 +499,14 @@ class XmasDisplayer {
         s.concat(seconds);
         Serial.println(s);
       }
-      lastRestart = millis();
-      flakeDistributor.reset();
-      meltDistributor.reset();
-      snowflakes.clear();
-      for (int i = 0; i < WIDTH; i++) {
-        snowLevel[i] = HEIGHT;
-      }
-      LEDStripWrapper::clear();
-      snowState = snowing;
+      start();
+      checkState("restart()");
+      changeState(snowing);
     }
   public:
     XmasDisplayer() {
       bitmap = new Bitmap(WIDTH, HEIGHT);
-      restart();
+      start();
     }
     void clear() {
       if (show) {
@@ -485,6 +530,7 @@ class XmasDisplayer {
         }      
       }
       if (! snowLeft) {
+        delay(BETWEEN_STATE_WAIT);
         restart();
       }
     }
@@ -503,7 +549,7 @@ class XmasDisplayer {
             it->currentY++;
             if (it->currentY > snowLevel[it->currentX] - 1) {
               if (snowLevel[it->currentX] < HEIGHT - 2) { // a few rows of snow on the ground
-                snowState = stopping;
+                changeState(stopping);
                 break; // no more snow
               }
               snowLevel[it->currentX]--;
@@ -532,8 +578,8 @@ class XmasDisplayer {
           case stopping:
             snow(now);
             if (snowflakes.size() == 0) {
-              snowState = melting;
-              delay(2000);
+              changeState(melting);
+              delay(BETWEEN_STATE_WAIT);
               lastMeltTime = millis();
             }
             break;
