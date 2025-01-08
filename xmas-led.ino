@@ -431,7 +431,6 @@ class XmasDisplayer {
 
     Bitmap*            bitmap;
     vector<Snowflake>  snowflakes;
-    bool               show = true;
     int                endFlakeCount = 16;
     long               minVelocity = 600;
     int                maxVelocity = 900;
@@ -447,7 +446,8 @@ class XmasDisplayer {
     };
     SnowState          snowState = snowing;
     unsigned long      lastRestart = 0;
-    const int          BETWEEN_STATE_WAIT = 2000;      
+    const int          BETWEEN_STATE_WAIT = 2000;
+    const bool         WAITING_BETWEEN_CYCLES = false;     
 
     Snowflake createSnowflake() {
       int v = rand() % (maxVelocity - minVelocity) + minVelocity;
@@ -466,6 +466,10 @@ class XmasDisplayer {
       s.concat(snowStateName(snowState));
       s.concat(" to: ");
       s.concat(snowStateName(ss));
+      if (WAITING_BETWEEN_CYCLES) {
+        show = false;
+        s.concat(", 'show' to continue");
+      }
       Serial.println(s);
       snowState = ss;
     }
@@ -504,6 +508,7 @@ class XmasDisplayer {
       changeState(snowing);
     }
   public:
+    bool               show = true;
     XmasDisplayer() {
       bitmap = new Bitmap(WIDTH, HEIGHT);
       start();
@@ -625,7 +630,7 @@ class App {
                     "showOLED, showLEDStrip, showTextBitmap, "
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, theDelay=[delayInMilliseconds], "
-                    "showBuild, capacityTest";
+                    "showBuild, capacityTest, show";
     String configs[2] = {
       "~2024Dec28:10:04", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
@@ -679,6 +684,8 @@ class App {
           showBuild();
         } else if (teststr.startsWith("capacityTest")) {
           LEDStripWrapper::capacityTest();
+        } else if (teststr.startsWith("show")) {
+          xmasDisplayer.show = true;
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
