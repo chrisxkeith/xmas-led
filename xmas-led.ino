@@ -340,7 +340,7 @@ class LEDStripWrapper {
     }
     static void startup() {
       clear();
-      speedTest();
+      // speedTest();
     }
 };
 uint32_t LEDStripWrapper::theDelay = 0;
@@ -447,7 +447,6 @@ class XmasDisplayer {
     SnowState          snowState = snowing;
     unsigned long      lastRestart = 0;
     const int          BETWEEN_STATE_WAIT = 2000;
-    const bool         WAITING_BETWEEN_CYCLES = false;     
 
     Snowflake createSnowflake() {
       int v = rand() % (maxVelocity - minVelocity) + minVelocity;
@@ -466,7 +465,7 @@ class XmasDisplayer {
       s.concat(snowStateName(snowState));
       s.concat(" to: ");
       s.concat(snowStateName(ss));
-      if (WAITING_BETWEEN_CYCLES) {
+      if (waitingBetweenCycles) {
         show = false;
         s.concat(", 'show' to continue");
       }
@@ -494,6 +493,15 @@ class XmasDisplayer {
       for (int i = 0; i < WIDTH; i++) {
         snowLevel[i] = HEIGHT;
       }
+      if (waitingBetweenCycles) {
+        const int   DELAY_SECONDS = 15;
+        for (int i = DELAY_SECONDS; i >= 0; i--) {
+          String msg("Delaying ");
+          msg.concat(i);
+          msg.concat(" seconds before clear.");
+          delay(1000);        
+        }
+      }
       LEDStripWrapper::clear();
     }
     void restart() {
@@ -509,6 +517,7 @@ class XmasDisplayer {
     }
   public:
     bool               show = true;
+    bool               waitingBetweenCycles = false;     
     XmasDisplayer() {
       bitmap = new Bitmap(WIDTH, HEIGHT);
       start();
@@ -630,9 +639,9 @@ class App {
                     "showOLED, showLEDStrip, showTextBitmap, "
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, theDelay=[delayInMilliseconds], "
-                    "showBuild, capacityTest, show";
+                    "showBuild, capacityTest, show, waitingBetweenCycles";
     String configs[2] = {
-      "~2024Dec28:10:04", // date +"%Y%b%d:%H:%M"
+      "~2025Jan13:10:10", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
@@ -686,6 +695,8 @@ class App {
           LEDStripWrapper::capacityTest();
         } else if (teststr.startsWith("show")) {
           xmasDisplayer.show = true;
+        } else if (teststr.startsWith("waitingBetweenCycles")) {
+          xmasDisplayer.waitingBetweenCycles = !xmasDisplayer.waitingBetweenCycles;
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
