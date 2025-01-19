@@ -485,6 +485,18 @@ class XmasDisplayer {
         err.concat(bitmap->bitCount());
         bitmap->clear();
       }
+      String e2;
+      for (int i = 0; i < WIDTH; i++) {
+        if (snowLevel[i] < HEIGHT) {
+          e2.concat(i);
+          e2.concat(" ");
+        }
+        if (e2.length() > 0) {
+          String ee("Non-melted snow: ");
+          ee.concat(e2);
+          Serial.println(e2);
+        }
+      }
     }
     void start() {
       lastRestart = millis();
@@ -499,6 +511,7 @@ class XmasDisplayer {
           String msg("Delaying ");
           msg.concat(i);
           msg.concat(" seconds before clear.");
+          Serial.println(msg);
           delay(1000);        
         }
       }
