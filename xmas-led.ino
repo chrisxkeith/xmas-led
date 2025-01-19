@@ -465,11 +465,8 @@ class XmasDisplayer {
       s.concat(snowStateName(snowState));
       s.concat(" to: ");
       s.concat(snowStateName(ss));
-      if (waitingBetweenCycles) {
-        show = false;
-        s.concat(", 'show' to continue");
-      }
       Serial.println(s);
+      pause("changeState");
       snowState = ss;
     }
     void checkState(String s) {
@@ -498,24 +495,34 @@ class XmasDisplayer {
         }
       }
     }
-    void start() {
+    void start(bool constructing) {
       lastRestart = millis();
       flakeDistributor.reset();
       meltDistributor.reset();
       for (int i = 0; i < WIDTH; i++) {
         snowLevel[i] = HEIGHT;
       }
-      if (waitingBetweenCycles) {
-        const int   DELAY_SECONDS = 15;
-        for (int i = DELAY_SECONDS; i >= 0; i--) {
-          String msg("Delaying ");
-          msg.concat(i);
-          msg.concat(" seconds before clear.");
-          Serial.println(msg);
-          delay(1000);        
-        }
+      if (! constructing) {
+        pause("start");
       }
       LEDStripWrapper::clear();
+    }
+    void doPause(String msg, int delay_seconds) {
+      String s(msg);
+      s.concat(": Delaying... ");
+      Serial.print(s);
+      for (int i = DELAY_SECONDS; i > 0; i--) {
+        String msg(i);
+        msg.concat(" ");
+        Serial.print(msg);
+        delay(1000);        
+      }
+      Serial.println("");
+    }
+    void pause(String msg) {
+      if (DELAY_SECONDS > 0) {
+        doPause(msg, DELAY_SECONDS);
+      }
     }
     void restart() {
       if (lastRestart > 0) {
@@ -524,16 +531,17 @@ class XmasDisplayer {
         s.concat(seconds);
         Serial.println(s);
       }
-      start();
+      start(false);
       checkState("restart()");
       changeState(snowing);
     }
   public:
     bool               show = true;
-    bool               waitingBetweenCycles = false;     
+    const int          DELAY_SECONDS = 0;
+    
     XmasDisplayer() {
       bitmap = new Bitmap(WIDTH, HEIGHT);
-      start();
+      start(true);
     }
     void clear() {
       if (show) {
@@ -708,8 +716,6 @@ class App {
           LEDStripWrapper::capacityTest();
         } else if (teststr.startsWith("show")) {
           xmasDisplayer.show = true;
-        } else if (teststr.startsWith("waitingBetweenCycles")) {
-          xmasDisplayer.waitingBetweenCycles = !xmasDisplayer.waitingBetweenCycles;
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
