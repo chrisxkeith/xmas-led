@@ -660,7 +660,7 @@ class App {
                     "showOLED, showLEDStrip, showTextBitmap, "
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, theDelay=[delayInMilliseconds], "
-                    "showBuild, capacityTest, show, waitingBetweenCycles";
+                    "showBuild, capacityTest, show, stop, waitingBetweenCycles";
     String configs[2] = {
       "~2025Jan13:10:10", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
@@ -716,6 +716,11 @@ class App {
           LEDStripWrapper::capacityTest();
         } else if (teststr.startsWith("show")) {
           xmasDisplayer.show = true;
+        } else if (teststr.startsWith("stop")) {
+          LEDStripWrapper::clear();
+          oledWrapper->clear();
+          xmasDisplayer.clear();
+          xmasDisplayer.show = false;
         } else {
           String msg("Unknown command: '");
           msg.concat(teststr);
