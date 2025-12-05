@@ -432,8 +432,8 @@ class XmasDisplayer {
     Bitmap*            bitmap;
     vector<Snowflake>  snowflakes;
     int                endFlakeCount = 16;
-    long               minVelocity = 600;
-    int                maxVelocity = 900;
+    long               minVelocity = 100;
+    int                maxVelocity = 500;
     unsigned long      lastAddedTime = 0;
     unsigned long      lastMeltTime = 0;
     RandomDistributor  flakeDistributor;
@@ -596,7 +596,7 @@ class XmasDisplayer {
           }
         }
       }
-      if (snowState == snowing && now > lastAddedTime + 500) {
+      if (snowState == snowing && now > lastAddedTime + 100) {
         if (snowflakes.size() < WIDTH) {
             snowflakes.push_back(createSnowflake());
             lastAddedTime = now;
