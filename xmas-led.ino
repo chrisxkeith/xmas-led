@@ -438,11 +438,9 @@ class XmasDisplayer {
     unsigned long      lastMeltTime = 0;
     RandomDistributor  flakeDistributor;
     RandomDistributor  meltDistributor = RandomDistributor(true);
-    int                snowLevel[WIDTH];
     enum SnowState {
         snowing,
-        stopping,
-        melting
+        stopping
     };
     SnowState          snowState = snowing;
     unsigned long      lastRestart = 0;
@@ -456,7 +454,6 @@ class XmasDisplayer {
       switch (ss) {
         case snowing:  return "snowing";
         case stopping: return "stopping";
-        case melting:  return "melting";
         default:       return "Unknown SnowState!";
       }
     }
@@ -484,10 +481,6 @@ class XmasDisplayer {
       }
       String e2;
       for (int i = 0; i < WIDTH; i++) {
-        if (snowLevel[i] < HEIGHT) {
-          e2.concat(i);
-          e2.concat(" ");
-        }
         if (e2.length() > 0) {
           String ee("Non-melted snow: ");
           ee.concat(e2);
@@ -499,9 +492,6 @@ class XmasDisplayer {
       lastRestart = millis();
       flakeDistributor.reset();
       meltDistributor.reset();
-      for (int i = 0; i < WIDTH; i++) {
-        snowLevel[i] = HEIGHT;
-      }
       if (! constructing) {
         pause("start");
       }
@@ -549,80 +539,37 @@ class XmasDisplayer {
       }
       show = ! show;
     }
-    void melt(unsigned long now) {
-      if (now > lastMeltTime + 100) {
-        int xx = meltDistributor.getNextCoord();
-        if (snowLevel[xx] < HEIGHT) {
-          bitmap->clearBit(xx, snowLevel[xx]++);
-          lastMeltTime = millis();
-        }
-      }
-      bool snowLeft = false;
-      for (int x = 0; x < WIDTH; x++) {
-        if (snowLevel[x] < HEIGHT) {
-          snowLeft = true;
-          break;  
-        }      
-      }
-      if (! snowLeft) {
-        delay(BETWEEN_STATE_WAIT);
-        restart();
-      }
-    }
     void snow(unsigned long now) {
+      bool atLeastOneMoved = false;
       for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
         if (now > it->lastRedraw + it->velocityInMS) {
-          if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
-            bitmap->clearBit(it->currentX, it->currentY);
-          }
-          if (snowState == stopping) {
-            it = snowflakes.erase(it);
-            if (it == snowflakes.end()) {
-              break;
-            }
-          } else {
-            it->currentY++;
-            if (it->currentY > snowLevel[it->currentX] - 1) {
-              if (snowLevel[it->currentX] < HEIGHT - 2) { // a few rows of snow on the ground
-                changeState(stopping);
-                break; // no more snow
-              }
-              snowLevel[it->currentX]--;
-              it->currentY = -1;
+            if (it->currentY > 0) {
+              it->currentY++;
               it->velocityInMS = rand() % (maxVelocity - minVelocity) + minVelocity;
+              bitmap->setBit(it->currentX, it->currentY);
+              it->lastRedraw = now;
+              atLeastOneMoved = true;
             }
-            bitmap->setBit(it->currentX, it->currentY);
-            it->lastRedraw = now;
-          }
         }
       }
       if (snowState == snowing && now > lastAddedTime + 500) {
         if (snowflakes.size() < WIDTH) {
             snowflakes.push_back(createSnowflake());
             lastAddedTime = now;
+            atLeastOneMoved = true;
         }
       }
-    }
+      if (! atLeastOneMoved) {
+//        snowState = stopping;
+      }
+   }
     void display() {
       if (show) {
-        unsigned long now = millis();
-        switch (snowState) {
-          case snowing:
-            snow(now);
-            break;
-          case stopping:
-            snow(now);
-            if (snowflakes.size() == 0) {
-              changeState(melting);
-              delay(BETWEEN_STATE_WAIT);
-              lastMeltTime = millis();
-            }
-            break;
-          case melting:
-            melt(now);
-            break;
-        }
+        snow(millis());
         LEDStripWrapper::showBitmap(bitmap);
+        if (snowState == stopping) {
+          restart();
+        }
       }
     }
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
@@ -643,15 +590,15 @@ class XmasDisplayer {
     void bitmapTest(bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       bitmap->createDiagonals();
       runTest("diagonals", showOLED, showLEDStrip, showTextBitmap);
-      bitmap->fill();
+/*      bitmap->fill();
       runTest("fill", showOLED, showLEDStrip, showTextBitmap);
-    }
+*/    }
 };
 XmasDisplayer xmasDisplayer;
 
 class App {
   private:
-    bool  showOLED = false;
+    bool  showOLED = true;
     bool  showLEDStrip = true;
     bool  showTextBitmap = false;
 
@@ -723,6 +670,9 @@ class App {
           msg.concat(cmds);
           Serial.println(msg);
         }
+        String msg("Finished: ");
+        msg.concat(teststr);
+        Serial.println(msg);
       }
     }
   public:
@@ -734,10 +684,9 @@ class App {
       Wire.begin();
       FastLED.addLeds<APA102, LEDStripWrapper::DATA_PIN, LEDStripWrapper::CLOCK_PIN, BGR>(leds, NUM_LEDS);
       LEDStripWrapper::startup();
-      // Utils::scanI2C();
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
-      // Serial.println(cmds.c_str());
+      xmasDisplayer.bitmapTest(showOLED, showLEDStrip, showTextBitmap);
     }
     void loop() {
       xmasDisplayer.display();
