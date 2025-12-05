@@ -340,7 +340,6 @@ class LEDStripWrapper {
     }
     static void startup() {
       clear();
-      // speedTest();
     }
 };
 uint32_t LEDStripWrapper::theDelay = 0;
@@ -373,16 +372,16 @@ class Snowflake {
       this->currentX = currentX;
       this->currentY = currentY;
       this->velocityInMS = velocityInMS;
-      this->lastRedraw = 0;      
+      this->lastRedraw = 0;
     }
     void dump() {
-      String s("x: ");
+      String s("Snowflake: currentX: ");
       s.concat(currentX);
-      s.concat(", y: ");
+      s.concat(", currentY: ");
       s.concat(currentY);
-      s.concat(", v: ");
+      s.concat(", velocityInMS: ");
       s.concat(velocityInMS);
-      s.concat(", last: ");
+      s.concat(", lastRedraw: ");
       s.concat(lastRedraw);
       Serial.println(s);
     }
@@ -432,22 +431,19 @@ class XmasDisplayer {
     Bitmap*            bitmap;
     vector<Snowflake>  snowflakes;
     int                endFlakeCount = 16;
-    long               minVelocity = 600;
-    int                maxVelocity = 900;
+    const long         MIN_VELOCITY = 100;
+    const int          MAX_VELOCITY = 300;
     unsigned long      lastAddedTime = 0;
-    unsigned long      lastMeltTime = 0;
     RandomDistributor  flakeDistributor;
-    RandomDistributor  meltDistributor = RandomDistributor(true);
     enum SnowState {
         snowing,
         stopping
     };
     SnowState          snowState = snowing;
     unsigned long      lastRestart = 0;
-    const int          BETWEEN_STATE_WAIT = 2000;
 
     Snowflake createSnowflake() {
-      int v = rand() % (maxVelocity - minVelocity) + minVelocity;
+      int v = rand() % (MAX_VELOCITY - MIN_VELOCITY) + MIN_VELOCITY;
       return Snowflake(flakeDistributor.getNextCoord(), -1,  v);
     }
     String snowStateName(SnowState ss) {
@@ -491,7 +487,6 @@ class XmasDisplayer {
     void start(bool constructing) {
       lastRestart = millis();
       flakeDistributor.reset();
-      meltDistributor.reset();
       if (! constructing) {
         pause("start");
       }
@@ -543,25 +538,22 @@ class XmasDisplayer {
       bool atLeastOneMoved = false;
       for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
         if (now > it->lastRedraw + it->velocityInMS) {
-            if (it->currentY > 0) {
+            if (it->currentY < HEIGHT) {
               it->currentY++;
-              it->velocityInMS = rand() % (maxVelocity - minVelocity) + minVelocity;
               bitmap->setBit(it->currentX, it->currentY);
               it->lastRedraw = now;
               atLeastOneMoved = true;
             }
         }
       }
-      if (snowState == snowing && now > lastAddedTime + 500) {
-        if (snowflakes.size() < WIDTH) {
+      if (snowState == snowing && 
+          now > lastAddedTime + 500 && 
+          snowflakes.size() < WIDTH) {
             snowflakes.push_back(createSnowflake());
             lastAddedTime = now;
             atLeastOneMoved = true;
-        }
       }
-      if (! atLeastOneMoved) {
-//        snowState = stopping;
-      }
+      LEDStripWrapper::showBitmap(bitmap);
    }
     void display() {
       if (show) {
@@ -593,6 +585,19 @@ class XmasDisplayer {
 /*      bitmap->fill();
       runTest("fill", showOLED, showLEDStrip, showTextBitmap);
 */    }
+      void dump() {
+        String s("XmasDisplayer: show: ");
+        s.concat(show ? "true" : "false");
+        s.concat(", snowflakes.size(): ");
+        s.concat(snowflakes.size());
+        s.concat(", snowState: ");
+        s.concat(snowStateName(snowState));
+        s.concat(", lastAddedTime: ");
+        s.concat(lastAddedTime);
+        s.concat(", millis(): ");
+        s.concat(millis());
+        Serial.println(s);
+      }
 };
 XmasDisplayer xmasDisplayer;
 
@@ -609,7 +614,7 @@ class App {
                     "clear, theDelay=[delayInMilliseconds], "
                     "showBuild, capacityTest, show, waitingBetweenCycles";
     String configs[2] = {
-      "~2025Jan13:10:10", // date +"%Y%b%d:%H:%M"
+      "~2025Dec04:16:55", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
@@ -686,7 +691,6 @@ class App {
       LEDStripWrapper::startup();
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
-      xmasDisplayer.bitmapTest(showOLED, showLEDStrip, showTextBitmap);
     }
     void loop() {
       xmasDisplayer.display();
