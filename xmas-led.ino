@@ -21,6 +21,9 @@ class Timer {
 };
 
 class Utils {
+  private:
+    static int lastRand;
+    const static int RAND_INCREMENT = 37;
   public:
     // Modified from https://playground.arduino.cc/Main/I2cScanner/
     static void scanI2C() {
@@ -59,13 +62,18 @@ class Utils {
       Serial.println(ss);
     }
     static int myRand() {
-      int r = rand();
-      if (r < 0) {
-        r = -r;
+      int ret = lastRand + RAND_INCREMENT;
+      if (ret < 0) {
+        ret = 0;
       }
-      return r;
+      lastRand = ret;
+      return ret;
+    }
+    static void resetRand() {
+      lastRand = 0;
     }
 };
+int Utils::lastRand = 0;
 
 #include <cstring> // for memset()
 // Horizontal bytes, left-to-right, top-to-bottom.
@@ -506,6 +514,7 @@ class XmasDisplayer {
       lastRestart = millis();
       flakeDistributor.reset();
       meltDistributor.reset();
+      Utils::resetRand();
       for (int i = 0; i < WIDTH; i++) {
         snowLevel[i] = HEIGHT;
       }
