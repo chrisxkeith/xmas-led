@@ -58,6 +58,13 @@ class Utils {
       }
       Serial.println(ss);
     }
+    static int myRand() {
+      int r = rand();
+      if (r < 0) {
+        r = -r;
+      }
+      return r;
+    }
 };
 
 #include <cstring> // for memset()
@@ -411,12 +418,12 @@ class RandomDistributor {
           reset();
         } else {
           String err("RandomDistributor: called too many times");
-          return rand() % N_COORDS;
+          return Utils::myRand() % N_COORDS;
         }
       }
-      int x = rand() % N_COORDS;
+      int x = Utils::myRand() % N_COORDS;
       while (xcoords[x]) {
-        x = rand() % N_COORDS;
+        x = Utils::myRand() % N_COORDS;
       }
       xcoords[x] = true;
       calledCount++;
@@ -449,7 +456,7 @@ class XmasDisplayer {
     const int          BETWEEN_STATE_WAIT = 2000;
 
     Snowflake createSnowflake() {
-      int v = rand() % (maxVelocity - minVelocity) + minVelocity;
+      int v = Utils::myRand() % (maxVelocity - minVelocity) + minVelocity;
       return Snowflake(flakeDistributor.getNextCoord(), -1,  v);
     }
     String snowStateName(SnowState ss) {
@@ -589,7 +596,7 @@ class XmasDisplayer {
               }
               snowLevel[it->currentX]--;
               it->currentY = -1;
-              it->velocityInMS = rand() % (maxVelocity - minVelocity) + minVelocity;
+              it->velocityInMS = Utils::myRand() % (maxVelocity - minVelocity) + minVelocity;
             }
             bitmap->setBit(it->currentX, it->currentY);
             it->lastRedraw = now;
@@ -662,7 +669,7 @@ class App {
                     "clear, theDelay=[delayInMilliseconds], "
                     "showBuild, capacityTest, show, stop, waitingBetweenCycles";
     String configs[2] = {
-      "~2025Jan13:10:10", // date +"%Y%b%d:%H:%M"
+      "~2025Dec05:11:15", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
