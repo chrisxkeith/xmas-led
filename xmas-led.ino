@@ -462,6 +462,7 @@ class XmasDisplayer {
     SnowState          snowState = snowing;
     unsigned long      lastRestart = 0;
     const int          BETWEEN_STATE_WAIT = 2000;
+    const int          MAX_SNOW_HEIGHT = HEIGHT - 2;  // 3 (?) rows of snow on the ground
 
     Snowflake createSnowflake() {
       int v = Utils::myRand() % (maxVelocity - minVelocity) + minVelocity;
@@ -599,9 +600,8 @@ class XmasDisplayer {
           } else {
             it->currentY++;
             if (it->currentY > snowLevel[it->currentX] - 1) {
-              if (snowLevel[it->currentX] < HEIGHT - 2) { // a few rows of snow on the ground
-                changeState(stopping);
-                break; // no more snow
+              if (snowLevel[it->currentX] < MAX_SNOW_HEIGHT) {
+                continue;
               }
               snowLevel[it->currentX]--;
               it->currentY = -1;
@@ -612,10 +612,24 @@ class XmasDisplayer {
           }
         }
       }
-      if (snowState == snowing && now > lastAddedTime + 100) {
-        if (snowflakes.size() < WIDTH) {
-            snowflakes.push_back(createSnowflake());
-            lastAddedTime = now;
+      if (snowState == snowing) {
+        //  Look at snowLevel to see if we're all done snowing?
+        SnowState nextState = stopping;
+        for (int i = 0; i < WIDTH; i++) {
+          if (snowLevel[i] > MAX_SNOW_HEIGHT) {
+            nextState = snowing;
+            break;
+          }
+        }
+        if (nextState == stopping) {
+          changeState(stopping);
+          return;
+        }
+        if (now > lastAddedTime + 100) {
+          if (snowflakes.size() < WIDTH) {
+              snowflakes.push_back(createSnowflake());
+              lastAddedTime = now;
+          }
         }
       }
     }
