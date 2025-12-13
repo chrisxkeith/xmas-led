@@ -112,6 +112,19 @@ class Bitmap {
     }
     int sizeInBytes() { return width * height / 8; }
     int calcByteIndex(int x, int y) {
+      if (x < 0 || y < 0) {
+        String err("x=");
+        err.concat(x);
+        err.concat(", y=");
+        err.concat(y);
+        err.concat(" out of bounds (");
+        err.concat(width);
+        err.concat(",");
+        err.concat(height);
+        err.concat(")");
+        Serial.println(err);
+        return 0;
+      }
       int i = (x / 8) + (y * width / 8);
       if (i >= sizeInBytes() * 8) {
         String err("x=");
@@ -591,6 +604,7 @@ class XmasDisplayer {
         if (now > it->lastRedraw + it->velocityInMS) {
           if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
             bitmap->clearBit(it->currentX, it->currentY);
+            it->lastRedraw = now;
           }
           if (snowState == stopping) {
             it = snowflakes.erase(it);
@@ -607,8 +621,10 @@ class XmasDisplayer {
               it->currentY = -1;
               it->velocityInMS = Utils::myRand() % (maxVelocity - minVelocity) + minVelocity;
             }
-            bitmap->setBit(it->currentX, it->currentY);
-            it->lastRedraw = now;
+            if (it->currentY >= 0) {
+              bitmap->setBit(it->currentX, it->currentY);
+              it->lastRedraw = now;
+            }
           }
         }
       }
