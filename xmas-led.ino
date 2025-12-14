@@ -475,7 +475,7 @@ class XmasDisplayer {
     SnowState          snowState = snowing;
     unsigned long      lastRestart = 0;
     const int          BETWEEN_STATE_WAIT = 2000;
-    const int          MAX_SNOW_HEIGHT = HEIGHT - 2;  // 3 (?) rows of snow on the ground
+    const int          MAX_SNOW_HEIGHT_COORD = HEIGHT - 3;  // 3 solid rows of snow on the ground, with some higher drifts
 
     Snowflake createSnowflake() {
       int v = Utils::myRand() % (maxVelocity - minVelocity) + minVelocity;
@@ -614,7 +614,7 @@ class XmasDisplayer {
           } else {
             it->currentY++;
             if (it->currentY > snowLevel[it->currentX] - 1) {
-              if (snowLevel[it->currentX] < MAX_SNOW_HEIGHT) {
+              if (snowLevel[it->currentX] < MAX_SNOW_HEIGHT_COORD) {
                 continue;
               }
               snowLevel[it->currentX]--;
@@ -632,7 +632,7 @@ class XmasDisplayer {
         //  Look at snowLevel to see if we're all done snowing?
         SnowState nextState = stopping;
         for (int i = 0; i < WIDTH; i++) {
-          if (snowLevel[i] > MAX_SNOW_HEIGHT) {
+          if (snowLevel[i] > MAX_SNOW_HEIGHT_COORD) {
             nextState = snowing;
             break;
           }
