@@ -497,6 +497,7 @@ class XmasDisplayer {
       Serial.println(s);
       pause("changeState");
       snowState = ss;
+      dump();
     }
     void checkState(String s) {
       if (snowflakes.size() > 0) {
@@ -692,6 +693,14 @@ class XmasDisplayer {
       bitmap->fill();
       runTest("fill", showOLED, showLEDStrip, showTextBitmap);
     }
+    void dump() {
+      String s("XmasDisplayer: snowLevel(s): ");
+      for (int i = 0; i < WIDTH; i++) {
+        s.concat(snowLevel[i]);
+        s.concat(" ");
+      }
+      Serial.println(s);
+    }
 };
 XmasDisplayer xmasDisplayer;
 
@@ -706,7 +715,8 @@ class App {
                     "showOLED, showLEDStrip, showTextBitmap, "
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, theDelay=[delayInMilliseconds], "
-                    "showBuild, capacityTest, show, stop, waitingBetweenCycles";
+                    "showBuild, capacityTest, start, stop, "
+                    "dump, waitingBetweenCycles";
     String configs[2] = {
       "~2025Dec05:11:15", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
@@ -760,8 +770,10 @@ class App {
           showBuild();
         } else if (teststr.startsWith("capacityTest")) {
           LEDStripWrapper::capacityTest();
-        } else if (teststr.startsWith("show")) {
+        } else if (teststr.startsWith("start")) {
           xmasDisplayer.show = true;
+        } else if (teststr.startsWith("dump")) {
+          xmasDisplayer.dump();
         } else if (teststr.startsWith("stop")) {
           LEDStripWrapper::clear();
           oledWrapper->clear();
