@@ -75,7 +75,7 @@ class Utils {
     }
 };
 int Utils::lastRand = 0;
-bool Utils::diagnosing = false;
+bool Utils::diagnosing = true;
 
 #include <cstring> // for memset()
 // Horizontal bytes, left-to-right, top-to-bottom.
@@ -654,7 +654,7 @@ class XmasDisplayer {
         }
       }
     }
-    bool display() {
+    bool display(bool showOLED) {
       SnowState previousState = snowState;
       if (show) {
         unsigned long now = millis();
@@ -675,6 +675,9 @@ class XmasDisplayer {
             break;
         }
         LEDStripWrapper::showBitmap(bitmap);
+        if (showOLED) {
+          oledWrapper->bitmap(bitmap);
+        }
       }
       return (previousState != snowState);
     }
@@ -714,7 +717,7 @@ XmasDisplayer xmasDisplayer;
 
 class App {
   private:
-    bool  showOLED = false;
+    bool  showOLED = Utils::diagnosing;
     bool  showLEDStrip = true;
     bool  showTextBitmap = false;
     bool  waiting = false;
@@ -822,10 +825,10 @@ class App {
         }
       } else {
         if (Utils::diagnosing) {
-          waiting = xmasDisplayer.display();
+          waiting = xmasDisplayer.display(showOLED);
           firstMessage = true;
         } else {
-          xmasDisplayer.display();
+          xmasDisplayer.display(showOLED);
         }
       }
       checkSerial();
