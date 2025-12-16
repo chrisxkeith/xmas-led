@@ -529,19 +529,6 @@ class XmasDisplayer {
         }
       }
     }
-    void start(bool constructing) {
-      lastRestart = millis();
-      flakeDistributor.reset();
-      meltDistributor.reset();
-      Utils::resetRand();
-      for (int i = 0; i < WIDTH; i++) {
-        snowLevel[i] = HEIGHT;
-      }
-      if (! constructing) {
-        pause("start");
-      }
-      LEDStripWrapper::clear();
-    }
     void doPause(String msg, int delay_seconds) {
       String s(msg);
       s.concat(": Delaying... ");
@@ -577,6 +564,22 @@ class XmasDisplayer {
     XmasDisplayer() {
       bitmap = new Bitmap(WIDTH, HEIGHT);
       start(true);
+    }
+    void start(bool constructing) {
+      lastRestart = millis();
+      flakeDistributor.reset();
+      meltDistributor.reset();
+      Utils::resetRand();
+      for (int i = 0; i < WIDTH; i++) {
+        snowLevel[i] = HEIGHT;
+      }
+      if (! constructing) {
+        pause("start");
+      }
+      LEDStripWrapper::clear();
+      oledWrapper->clear();
+      bitmap->clear();
+      show = true;
     }
     void clear() {
       if (show) {
@@ -785,6 +788,7 @@ class App {
           LEDStripWrapper::capacityTest();
         } else if (teststr.startsWith("start")) {
           xmasDisplayer.show = true;
+          xmasDisplayer.start(true);
         } else if (teststr.startsWith("dump")) {
           xmasDisplayer.dump();
         } else if (teststr.startsWith("continue")) {
