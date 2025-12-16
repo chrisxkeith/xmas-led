@@ -650,7 +650,8 @@ class XmasDisplayer {
         }
       }
     }
-    void display() {
+    bool display() {
+      SnowState previousState = snowState;
       if (show) {
         unsigned long now = millis();
         switch (snowState) {
@@ -671,6 +672,7 @@ class XmasDisplayer {
         }
         LEDStripWrapper::showBitmap(bitmap);
       }
+      return (previousState != snowState);
     }
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       if (showOLED) {
@@ -709,6 +711,7 @@ class App {
     bool  showOLED = false;
     bool  showLEDStrip = true;
     bool  showTextBitmap = false;
+    bool  waiting = false;
 
     String cmds = "runSpeedTest, "
                     "runRampTest, runBitmapTest, "
@@ -716,7 +719,7 @@ class App {
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, theDelay=[delayInMilliseconds], "
                     "showBuild, capacityTest, start, stop, "
-                    "dump, waitingBetweenCycles";
+                    "dump, continue";
     String configs[2] = {
       "~2025Dec05:11:15", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
@@ -774,6 +777,8 @@ class App {
           xmasDisplayer.show = true;
         } else if (teststr.startsWith("dump")) {
           xmasDisplayer.dump();
+        } else if (teststr.startsWith("continue")) {
+          waiting = false;
         } else if (teststr.startsWith("stop")) {
           LEDStripWrapper::clear();
           oledWrapper->clear();
@@ -803,7 +808,12 @@ class App {
       // Serial.println(cmds.c_str());
     }
     void loop() {
-      xmasDisplayer.display();
+      if (waiting) {
+        Serial.println("Waiting for 'continue' command... (1 second delay)");
+        delay(1000); // avoid busy
+      } else {
+        /* waiting = */ xmasDisplayer.display();
+      }
       checkSerial();
     }
 };
