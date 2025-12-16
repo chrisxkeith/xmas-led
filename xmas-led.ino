@@ -25,6 +25,7 @@ class Utils {
     static int lastRand;
     const static int RAND_INCREMENT = 37;
   public:
+    static bool diagnosing;
     // Modified from https://playground.arduino.cc/Main/I2cScanner/
     static void scanI2C() {
       Timer t("scanI2C()");
@@ -74,6 +75,7 @@ class Utils {
     }
 };
 int Utils::lastRand = 0;
+bool Utils::diagnosing = false;
 
 #include <cstring> // for memset()
 // Horizontal bytes, left-to-right, top-to-bottom.
@@ -497,7 +499,9 @@ class XmasDisplayer {
       Serial.println(s);
       pause("changeState");
       snowState = ss;
-      dump();
+      if (Utils::diagnosing) {
+        dump();
+      }
     }
     void checkState(String s) {
       if (snowflakes.size() > 0) {
@@ -696,12 +700,14 @@ class XmasDisplayer {
       runTest("fill", showOLED, showLEDStrip, showTextBitmap);
     }
     void dump() {
-      String s("XmasDisplayer: snowLevel(s): ");
+      Serial.println("xmasDisplayer: ");
+      String s("snowLevel: ");
       for (int i = 0; i < WIDTH; i++) {
         s.concat(snowLevel[i]);
         s.concat(" ");
       }
       Serial.println(s);
+      bitmap->dump("bitmap:");
     }
 };
 XmasDisplayer xmasDisplayer;
@@ -712,6 +718,7 @@ class App {
     bool  showLEDStrip = true;
     bool  showTextBitmap = false;
     bool  waiting = false;
+    bool  firstMessage = true;
 
     String cmds = "runSpeedTest, "
                     "runRampTest, runBitmapTest, "
@@ -809,10 +816,17 @@ class App {
     }
     void loop() {
       if (waiting) {
-        Serial.println("Waiting for 'continue' command... (1 second delay)");
-        delay(1000); // avoid busy
+        if (firstMessage) {
+          Serial.println("Paused. Waiting for 'continue' command...");
+          firstMessage = false;
+        }
       } else {
-        /* waiting = */ xmasDisplayer.display();
+        if (Utils::diagnosing) {
+          waiting = xmasDisplayer.display();
+          firstMessage = true;
+        } else {
+          xmasDisplayer.display();
+        }
       }
       checkSerial();
     }
