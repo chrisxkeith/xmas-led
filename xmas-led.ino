@@ -157,10 +157,15 @@ class Bitmap {
       return bit;
     }
     void dump(String title) {
-      Serial.println(title);
+      if (!title.equals("")) {
+        Serial.println(title);
+      }
       String msg;
       for (int y = 0; y < height; y++) {
         msg.remove(0);
+        msg.concat(y < 10 ? " " : "");
+        msg.concat(y);
+        msg.concat(" ");
         for (int x = 0; x < width; x++) {
           char c = (getBit(x, y) ? '1' : '.');
           msg.concat(c);
@@ -706,14 +711,22 @@ class XmasDisplayer {
       runTest("fill", showOLED, showLEDStrip, showTextBitmap);
     }
     void dump() {
-      Serial.println("xmasDisplayer: ");
       String s("snowLevel: ");
       for (int i = 0; i < WIDTH; i++) {
         s.concat(snowLevel[i]);
         s.concat(" ");
       }
       Serial.println(s);
-      bitmap->dump("bitmap:");
+      String sf("active snowflakes count: ");
+      int c = 0;
+      for (Snowflake flake : snowflakes) {
+        if (flake.currentY >= 0) {
+          c++;
+        }
+      }
+      sf.concat(c);
+      Serial.println(sf);
+      bitmap->dump("");
     }
 };
 XmasDisplayer xmasDisplayer;
