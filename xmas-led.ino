@@ -614,6 +614,9 @@ class XmasDisplayer {
       }
       if (! snowLeft) {
         delay(BETWEEN_STATE_WAIT);
+        if (Utils::diagnosing) {
+          dump();
+        }
         restart();
       }
     }
