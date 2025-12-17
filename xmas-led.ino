@@ -484,9 +484,14 @@ class XmasDisplayer {
     const int          BETWEEN_STATE_WAIT = 2000;
     const int          MAX_SNOW_HEIGHT_COORD = HEIGHT - 3;  // 3 solid rows of snow on the ground, with some higher drifts
 
+    int calculateVelocity() {
+      if (Utils::diagnosing) {
+        return 0;
+      }
+      return Utils::myRand() % (maxVelocity - minVelocity) + minVelocity;
+    }
     Snowflake createSnowflake() {
-      int v = Utils::myRand() % (maxVelocity - minVelocity) + minVelocity;
-      return Snowflake(flakeDistributor.getNextCoord(), -1,  v);
+      return Snowflake(flakeDistributor.getNextCoord(), -1,  calculateVelocity());
     }
     String snowStateName(SnowState ss) {
       switch (ss) {
@@ -632,7 +637,7 @@ class XmasDisplayer {
               }
               snowLevel[it->currentX]--;
               it->currentY = -1;
-              it->velocityInMS = Utils::myRand() % (maxVelocity - minVelocity) + minVelocity;
+              it->velocityInMS = calculateVelocity();
             }
             if (it->currentY >= 0) {
               bitmap->setBit(it->currentX, it->currentY);
