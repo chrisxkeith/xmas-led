@@ -157,11 +157,14 @@ class Bitmap {
       return bit;
     }
     void dump(String title) {
+      dump(title, 0, height);
+    }    
+    void dump(String title, int topRow, int afterBottomRow) {
       if (!title.equals("")) {
         Serial.println(title);
       }
       String msg;
-      for (int y = 0; y < height; y++) {
+      for (int y = topRow; y < afterBottomRow; y++) {
         msg.remove(0);
         msg.concat(y < 10 ? " " : "");
         msg.concat(y);
@@ -467,8 +470,6 @@ class XmasDisplayer {
     Bitmap*            bitmap;
     vector<Snowflake>  snowflakes;
     int                endFlakeCount = 16;
-    long               minVelocity = 100;
-    int                maxVelocity = 500;
     unsigned long      lastAddedTime = 0;
     unsigned long      lastMeltTime = 0;
     RandomDistributor  flakeDistributor;
@@ -485,9 +486,6 @@ class XmasDisplayer {
     const int          MAX_SNOW_HEIGHT_COORD = HEIGHT - 3;  // 3 solid rows of snow on the ground, with some higher drifts
 
     int calculateVelocity() {
-      if (Utils::diagnosing) {
-        return 0;
-      }
       return Utils::myRand() % (maxVelocity - minVelocity) + minVelocity;
     }
     Snowflake createSnowflake() {
@@ -509,7 +507,7 @@ class XmasDisplayer {
       Serial.println(s);
       pause("changeState");
       snowState = ss;
-      if (Utils::diagnosing) {
+      if (ss == snowing && Utils::diagnosing) {
         dump();
       }
     }
@@ -557,7 +555,7 @@ class XmasDisplayer {
       }
     }
     void restart() {
-      if (lastRestart > 0) {
+      if (lastRestart > 0 && !Utils::diagnosing) {
         unsigned long seconds = (millis() - lastRestart) / 1000;
         String s("cycle time in seconds: ");
         s.concat(seconds);
@@ -570,6 +568,8 @@ class XmasDisplayer {
   public:
     bool               show = true;
     const int          DELAY_SECONDS = 0;
+    long               minVelocity = 100;
+    int                maxVelocity = 500;
     
     XmasDisplayer() {
       bitmap = new Bitmap(WIDTH, HEIGHT);
@@ -695,7 +695,7 @@ class XmasDisplayer {
           oledWrapper->bitmap(bitmap);
         }
       }
-      return (previousState != snowState);
+      return (previousState == stopping && snowState == melting);
     }
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       if (showOLED) {
@@ -725,16 +725,7 @@ class XmasDisplayer {
         s.concat(" ");
       }
       Serial.println(s);
-      String sf("active snowflakes count: ");
-      int c = 0;
-      for (Snowflake flake : snowflakes) {
-        if (flake.currentY >= 0) {
-          c++;
-        }
-      }
-      sf.concat(c);
-      Serial.println(sf);
-      bitmap->dump("");
+      bitmap->dump("", 12, 13);
     }
 };
 XmasDisplayer xmasDisplayer;
@@ -744,8 +735,6 @@ class App {
     bool  showOLED = Utils::diagnosing;
     bool  showLEDStrip = true;
     bool  showTextBitmap = false;
-    bool  waiting = false;
-    bool  firstMessage = true;
 
     String cmds = "runSpeedTest, "
                     "runRampTest, runBitmapTest, "
@@ -771,6 +760,15 @@ class App {
       delay(3000);
       b->fill();
       oledWrapper->bitmap(b);
+    }
+    void incrementVelocities() {
+      xmasDisplayer.maxVelocity += 25;
+      xmasDisplayer.minVelocity += 25;
+      String s("Continuing with maxVelocity: ");
+      s.concat(xmasDisplayer.maxVelocity);
+      s.concat(" and minVelocity: ");
+      s.concat(xmasDisplayer.minVelocity);
+      Serial.println(s);
     }
     void checkSerial() {
       if (Serial.available() > 0) {
@@ -812,8 +810,6 @@ class App {
           xmasDisplayer.start(true);
         } else if (teststr.startsWith("dump")) {
           xmasDisplayer.dump();
-        } else if (teststr.startsWith("continue")) {
-          waiting = false;
         } else if (teststr.startsWith("stop")) {
           LEDStripWrapper::clear();
           oledWrapper->clear();
@@ -840,21 +836,22 @@ class App {
       // Utils::scanI2C();
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
-      // Serial.println(cmds.c_str());
+      if (Utils::diagnosing) {
+        xmasDisplayer.maxVelocity = 100;
+        xmasDisplayer.minVelocity = 50;
+      }
     }
     void loop() {
-      if (waiting) {
-        if (firstMessage) {
-          Serial.println("Paused. Waiting for 'continue' command...");
-          firstMessage = false;
+      if (Utils::diagnosing) {
+        if (xmasDisplayer.display(showOLED)) {
+          incrementVelocities();
+          if (xmasDisplayer.maxVelocity > 200) {
+            Serial.println("maxVelocity exceeded 200. Stopping.");
+            while (true) { ; }
+          } 
         }
       } else {
-        if (Utils::diagnosing) {
-          waiting = xmasDisplayer.display(showOLED);
-          firstMessage = true;
-        } else {
-          xmasDisplayer.display(showOLED);
-        }
+        xmasDisplayer.display(showOLED);
       }
       checkSerial();
     }
