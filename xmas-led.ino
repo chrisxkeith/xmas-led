@@ -504,12 +504,8 @@ class XmasDisplayer {
       s.concat(snowStateName(snowState));
       s.concat(" to: ");
       s.concat(snowStateName(ss));
-      Serial.println(s);
-      pause("changeState");
+      // Serial.println(s);
       snowState = ss;
-      if (ss == snowing && Utils::diagnosing) {
-        dump();
-      }
     }
     void checkState(String s) {
       if (snowflakes.size() > 0) {
@@ -537,21 +533,20 @@ class XmasDisplayer {
         }
       }
     }
-    void doPause(String msg, int delay_seconds) {
-      String s(msg);
-      s.concat(": Delaying... ");
-      Serial.print(s);
-      for (int i = DELAY_SECONDS; i > 0; i--) {
-        String msg(i);
-        msg.concat(" ");
-        Serial.print(msg);
-        delay(1000);        
-      }
-      Serial.println("");
-    }
-    void pause(String msg) {
-      if (DELAY_SECONDS > 0) {
-        doPause(msg, DELAY_SECONDS);
+    void doPause(String msg) {
+      const int PAUSE_SECONDS = 0;
+
+      if (PAUSE_SECONDS > 0) {          
+        String s(msg);
+        s.concat(": Delaying... ");
+        Serial.print(s);
+        for (int i = PAUSE_SECONDS; i > 0; i--) {
+          String msg(i);
+          msg.concat(" ");
+          Serial.print(msg);
+          delay(1000);        
+        }
+        Serial.println("");
       }
     }
     void restart() {
@@ -567,7 +562,6 @@ class XmasDisplayer {
     }
   public:
     bool               show = true;
-    const int          DELAY_SECONDS = 0;
     long               minVelocity = 100;
     int                maxVelocity = 500;
     
@@ -582,9 +576,6 @@ class XmasDisplayer {
       Utils::resetRand();
       for (int i = 0; i < WIDTH; i++) {
         snowLevel[i] = HEIGHT;
-      }
-      if (! constructing) {
-        pause("start");
       }
       LEDStripWrapper::clear();
       oledWrapper->clear();
@@ -614,9 +605,6 @@ class XmasDisplayer {
       }
       if (! snowLeft) {
         delay(BETWEEN_STATE_WAIT);
-        if (Utils::diagnosing) {
-          dump();
-        }
         restart();
       }
     }
@@ -682,6 +670,7 @@ class XmasDisplayer {
             snow(now);
             if (snowflakes.size() == 0) {
               changeState(melting);
+              dump();
               delay(BETWEEN_STATE_WAIT);
               lastMeltTime = millis();
             }
@@ -845,8 +834,8 @@ class App {
       if (Utils::diagnosing) {
         if (xmasDisplayer.display(showOLED)) {
           incrementVelocities();
-          if (xmasDisplayer.maxVelocity > 200) {
-            Serial.println("maxVelocity exceeded 200. Stopping.");
+          if (xmasDisplayer.maxVelocity > 500) {
+            Serial.println("maxVelocity exceeded 500. Stopping.");
             while (true) { ; }
           } 
         }
