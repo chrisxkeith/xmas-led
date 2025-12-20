@@ -709,12 +709,33 @@ class XmasDisplayer {
     }
     void dump() {
       String s("snowLevel: ");
+      int snowLevelsAt12 = 0;
       for (int i = 0; i < WIDTH; i++) {
         s.concat(snowLevel[i]);
         s.concat(" ");
+        if (snowLevel[i] == 12) {
+          snowLevelsAt12++;
+        }
       }
-      Serial.println(s);
-      bitmap->dump("", 12, 13);
+      size_t pixelsAt12 = 0;
+      for (size_t i = 0; i < WIDTH; i++) {
+        if (bitmap->getBit(i, 12)) {
+          pixelsAt12++;
+        }
+      }
+      if (snowLevelsAt12 != pixelsAt12) {
+        String err("Mismatch: snowLevelsAt12: ");
+        err.concat(snowLevelsAt12);
+        err.concat(", pixelsAt12: ");
+        err.concat(pixelsAt12);
+        err.concat(", maxVelocity: ");
+        err.concat(maxVelocity);
+        err.concat(", minVelocity: ");
+        err.concat(minVelocity);
+        Serial.println(err);
+        Serial.println(s);
+        bitmap->dump("", 12, 13);
+      }
     }
 };
 XmasDisplayer xmasDisplayer;
@@ -751,13 +772,8 @@ class App {
       oledWrapper->bitmap(b);
     }
     void incrementVelocities() {
-      xmasDisplayer.maxVelocity += 25;
-      xmasDisplayer.minVelocity += 25;
-      String s("Continuing with maxVelocity: ");
-      s.concat(xmasDisplayer.maxVelocity);
-      s.concat(" and minVelocity: ");
-      s.concat(xmasDisplayer.minVelocity);
-      Serial.println(s);
+      xmasDisplayer.maxVelocity += 20;
+      xmasDisplayer.minVelocity += 20;
     }
     void checkSerial() {
       if (Serial.available() > 0) {
