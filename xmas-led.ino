@@ -143,13 +143,26 @@ class Bitmap {
       }
       return i;
     }
+    void dumpForPixel(int x, int y, String title) {
+      if (x == 9 && y == 12) {
+        String msg(title);
+        msg.concat(" (");
+        msg.concat(x);
+        msg.concat(", ");
+        msg.concat(y);
+        msg.concat(") ");
+        Serial.println(msg);
+      }
+    }
     void setBit(int x,  int y) {
       int i = calcByteIndex(x, y);
       bitmap[i] |= (1 << (7 - (x % 8)));
+      dumpForPixel(x, y, "setBit");
     }
     void clearBit(int x,  int y) {
       int i = calcByteIndex(x, y);
       bitmap[i] &= ~(1 << (7 - (x % 8)));
+      dumpForPixel(x, y, "clearBit");
     }
     int getBit(int x, int y) {
       byte b = bitmap[calcByteIndex(x, y)];
@@ -619,9 +632,6 @@ class XmasDisplayer {
         if (now > it->lastRedraw + it->velocityInMS) {
           if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
             bitmap->clearBit(it->currentX, it->currentY);
-              if (it->currentX == 8 && it->currentY == 12) {
-                dumpForSnowflake("clearBit");
-              }
             it->lastRedraw = now;
           }
           if (snowState == stopping) {
@@ -641,9 +651,6 @@ class XmasDisplayer {
             }
             if (it->currentY >= 0) {
               bitmap->setBit(it->currentX, it->currentY);
-              if (it->currentX == 8 && it->currentY == 12) {
-                dumpForSnowflake("setBit"); 
-              } 
               it->lastRedraw = now;
             }
           }
