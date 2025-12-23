@@ -157,12 +157,12 @@ class Bitmap {
     void setBit(int x,  int y) {
       int i = calcByteIndex(x, y);
       bitmap[i] |= (1 << (7 - (x % 8)));
-      dumpForPixel(x, y, "setBit");
+      // dumpForPixel(x, y, "setBit");
     }
     void clearBit(int x,  int y) {
       int i = calcByteIndex(x, y);
       bitmap[i] &= ~(1 << (7 - (x % 8)));
-      dumpForPixel(x, y, "clearBit");
+      // dumpForPixel(x, y, "clearBit");
     }
     int getBit(int x, int y) {
       byte b = bitmap[calcByteIndex(x, y)];
@@ -635,6 +635,10 @@ class XmasDisplayer {
             it->lastRedraw = now;
           }
           if (snowState == stopping) {
+            if (it->currentY >= 0) { // If not handled by clearBit above (because of timing, clear it here)
+              bitmap->clearBit(it->currentX, it->currentY);
+              it->lastRedraw = now;
+            }
             it = snowflakes.erase(it);
             if (it == snowflakes.end()) {
               break;
@@ -832,8 +836,6 @@ class App {
         } else if (teststr.startsWith("start")) {
           xmasDisplayer.show = true;
           xmasDisplayer.start(true);
-        } else if (teststr.startsWith("dump")) {
-          xmasDisplayer.dump();
         } else if (teststr.startsWith("stop")) {
           LEDStripWrapper::clear();
           oledWrapper->clear();
