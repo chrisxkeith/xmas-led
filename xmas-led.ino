@@ -608,11 +608,20 @@ class XmasDisplayer {
         restart();
       }
     }
+    void dumpForSnowflake(String m) {
+      m.concat(": Dumping for snowflake at (8,12), snowState: ");
+      m.concat(snowStateName(snowState));
+      Serial.println(m);
+      String s("Active Snowflakes: ");
+    }
     void snow(unsigned long now) {
       for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
         if (now > it->lastRedraw + it->velocityInMS) {
           if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
             bitmap->clearBit(it->currentX, it->currentY);
+              if (it->currentX == 8 && it->currentY == 12) {
+                dumpForSnowflake("clearBit");
+              }
             it->lastRedraw = now;
           }
           if (snowState == stopping) {
@@ -632,6 +641,9 @@ class XmasDisplayer {
             }
             if (it->currentY >= 0) {
               bitmap->setBit(it->currentX, it->currentY);
+              if (it->currentX == 8 && it->currentY == 12) {
+                dumpForSnowflake("setBit"); 
+              } 
               it->lastRedraw = now;
             }
           }
@@ -850,8 +862,8 @@ class App {
       if (Utils::diagnosing) {
         if (xmasDisplayer.display(showOLED)) {
           incrementVelocities();
-          if (xmasDisplayer.maxVelocity > 500) {
-            Serial.println("maxVelocity exceeded 500. Stopping.");
+          if (xmasDisplayer.maxVelocity > 100) {
+            Serial.println("... Stopping.");
             while (true) { ; }
           } 
         }
