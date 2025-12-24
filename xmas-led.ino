@@ -232,15 +232,31 @@ class OLEDWrapper {
       }
       clear();
     }
-    // Must convert to OLED bitmap format: vertical bytes, left-to-right, top-to-bottom
-    // Least-significant bit of first byte == (0,0).
-    void bitmap(Bitmap *pBitmap) {
-      std::memset(oledBitmap, 0b0000, SIZE_IN_BYTES);
-      for (int x = 0; x < pBitmap->width; x++) {
-        for (int y = 0; y < pBitmap->height; y++) {
-          if (pBitmap->getBit(x, y)) {
-            int   byteIndex = x + (y / 8 * kOLED1in3Width);
-            oledBitmap[byteIndex] |= (1 << (y % 8));
+   void setSuperPixelAt(int x, int y, bool on) {
+     int superPixelWidth = 4;
+     int superPixelHeight = 4;
+     for (int sx = 0; sx < superPixelWidth; sx++) {
+       for (int sy = 0; sy < superPixelHeight; sy++) {
+         int px = x * superPixelWidth + sx;
+         int py = y * superPixelHeight + sy;
+         if (on) {
+           oledBitmap[px + (py / 8 * kOLED1in3Width)] |= (1 << (py % 8));
+         } else {
+           oledBitmap[px + (py / 8 * kOLED1in3Width)] &= ~(1 << (py % 8));
+         }
+       }
+     }
+   }
+   // Must convert to OLED bitmap format: vertical bytes, left-to-right, top-to-bottom
+   // Least-significant bit of first byte == (0,0).
+   void bitmap(Bitmap *pBitmap) {
+     std::memset(oledBitmap, 0b0000, SIZE_IN_BYTES);
+     for (int x = 0; x < pBitmap->width; x++) {
+       for (int y = 0; y < pBitmap->height; y++) {
+         if (pBitmap->getBit(x, y)) {
+           setSuperPixelAt(x, y, true);
+//            int   byteIndex = x + (y / 8 * kOLED1in3Width);
+//            oledBitmap[byteIndex] |= (1 << (y % 8));
           } 
         }
       }
