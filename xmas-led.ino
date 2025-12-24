@@ -625,10 +625,6 @@ class XmasDisplayer {
             it->lastRedraw = now;
           }
           if (snowState == stopping) {
-            if (it->currentY >= 0) { // If not handled by clearBit above (because of timing, clear it here)
-              bitmap->clearBit(it->currentX, it->currentY);
-              it->lastRedraw = now;
-            }
             it = snowflakes.erase(it);
             if (it == snowflakes.end()) {
               break;
