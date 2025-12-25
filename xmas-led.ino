@@ -522,7 +522,7 @@ class XmasDisplayer {
       s.concat(snowStateName(ss));
       s.concat(", bitmap->bitCount(): ");
       s.concat(bitmap->bitCount());
-      Serial.println(s);
+      // Serial.println(s);
       snowState = ss;
     }
     void checkState(String s) {
@@ -574,6 +574,7 @@ class XmasDisplayer {
         s.concat(seconds);
         Serial.println(s);
       }
+      checkForLeftOverPixels();
       start(false);
       checkState("restart()");
       changeState(snowing);
@@ -734,6 +735,8 @@ class XmasDisplayer {
       if (bitmap->bitCount() > 0) {
         String err("Left-over pixels detected: ");
         err.concat(bitmap->bitCount());
+        err.concat(", snowState: ");
+        err.concat(snowStateName(snowState));
         Serial.println(err);
       }
     }
