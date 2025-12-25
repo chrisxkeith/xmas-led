@@ -520,7 +520,9 @@ class XmasDisplayer {
       s.concat(snowStateName(snowState));
       s.concat(" to: ");
       s.concat(snowStateName(ss));
-      // Serial.println(s);
+      s.concat(", bitmap->bitCount(): ");
+      s.concat(bitmap->bitCount());
+      Serial.println(s);
       snowState = ss;
     }
     void checkState(String s) {
@@ -635,9 +637,6 @@ class XmasDisplayer {
         if (now > it->lastRedraw + it->velocityInMS) {
           if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
             bitmap->clearBit(it->currentX, it->currentY);
-              if (it->currentX == 8 && it->currentY == 12) {
-                dumpForSnowflake("clearBit");
-              }
             it->lastRedraw = now;
           }
           if (snowState == stopping) {
@@ -657,9 +656,6 @@ class XmasDisplayer {
             }
             if (it->currentY >= 0) {
               bitmap->setBit(it->currentX, it->currentY);
-              if (it->currentX == 8 && it->currentY == 12) {
-                dumpForSnowflake("setBit"); 
-              } 
               it->lastRedraw = now;
             }
           }
@@ -698,7 +694,6 @@ class XmasDisplayer {
             snow(now);
             if (snowflakes.size() == 0) {
               changeState(melting);
-              dump();
               delay(BETWEEN_STATE_WAIT);
               lastMeltTime = millis();
             }
@@ -712,7 +707,7 @@ class XmasDisplayer {
           oledWrapper->bitmap(bitmap);
         }
       }
-      return (previousState == stopping && snowState == melting);
+      return (previousState == melting && snowState == snowing);
     }
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       if (showOLED) {
@@ -735,34 +730,11 @@ class XmasDisplayer {
       bitmap->fill();
       runTest("fill", showOLED, showLEDStrip, showTextBitmap);
     }
-    void dump() {
-      String s("snowLevel: ");
-      int snowLevelsAt12 = 0;
-      for (int i = 0; i < WIDTH; i++) {
-        s.concat(snowLevel[i]);
-        s.concat(" ");
-        if (snowLevel[i] == 12) {
-          snowLevelsAt12++;
-        }
-      }
-      size_t pixelsAt12 = 0;
-      for (size_t i = 0; i < WIDTH; i++) {
-        if (bitmap->getBit(i, 12)) {
-          pixelsAt12++;
-        }
-      }
-      if (snowLevelsAt12 != pixelsAt12) {
-        String err("Mismatch: snowLevelsAt12: ");
-        err.concat(snowLevelsAt12);
-        err.concat(", pixelsAt12: ");
-        err.concat(pixelsAt12);
-        err.concat(", maxVelocity: ");
-        err.concat(maxVelocity);
-        err.concat(", minVelocity: ");
-        err.concat(minVelocity);
+    void checkForLeftOverPixels() {
+      if (bitmap->bitCount() > 0) {
+        String err("Left-over pixels detected: ");
+        err.concat(bitmap->bitCount());
         Serial.println(err);
-        Serial.println(s);
-        bitmap->dump("", 12, 13);
       }
     }
 };
@@ -876,7 +848,7 @@ class App {
       if (Utils::diagnosing) {
         if (xmasDisplayer.display(showOLED)) {
           incrementVelocities();
-          if (xmasDisplayer.maxVelocity > 100) {
+          if (xmasDisplayer.maxVelocity > 300) {
             Serial.println("... Stopping.");
             while (true) { ; }
           } 
