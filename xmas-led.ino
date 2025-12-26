@@ -73,6 +73,11 @@ class Utils {
     static void resetRand() {
       lastRand = 0;
     }
+    static void halt() {
+      Serial.println("halting. Restart required.");
+      while (true) { ; }
+    }
+
 };
 int Utils::lastRand = 0;
 bool Utils::diagnosing = true;
@@ -499,6 +504,8 @@ class XmasDisplayer {
     unsigned long      lastRestart = 0;
     const int          BETWEEN_STATE_WAIT = 2000;
     const int          MAX_SNOW_HEIGHT_COORD = HEIGHT - 3;  // 3 solid rows of snow on the ground, with some higher drifts
+    long               minVelocity = 100;
+    int                maxVelocity = 500;
 
     int calculateVelocity() {
       return Utils::myRand() % (maxVelocity - minVelocity) + minVelocity;
@@ -580,11 +587,13 @@ class XmasDisplayer {
     }
   public:
     bool               show = true;
-    long               minVelocity = 100;
-    int                maxVelocity = 500;
     
     XmasDisplayer() {
       bitmap = new Bitmap(WIDTH, HEIGHT);
+      if (Utils::diagnosing) {
+        minVelocity = 50;
+        maxVelocity = 100;
+      }
       start(true);
     }
     void start(bool constructing) {
@@ -709,6 +718,20 @@ class XmasDisplayer {
       }
       return (previousState == melting && snowState == snowing);
     }
+    void doDisplay() {
+      if (Utils::diagnosing) {
+        if (display(true)) {
+          maxVelocity += 20;
+          minVelocity += 20;
+          if (maxVelocity > 300) {
+            Serial.println("... Stopping.");
+            Utils::halt();
+          } 
+        }
+      } else {
+        display(true);
+      }
+    }
     void runTest(String title, bool showOLED, bool showLEDStrip, bool showTextBitmap) {
       if (showOLED) {
         oledWrapper->bitmap(bitmap);
@@ -792,11 +815,7 @@ class App {
       delay(3000);
       oledWrapper->clear();
       oledWrapper->nativePixelTest();
-      halt();
-    }
-    void incrementVelocities() {
-      xmasDisplayer.maxVelocity += 20;
-      xmasDisplayer.minVelocity += 20;
+      Utils::halt();
     }
     void checkSerial() {
       if (Serial.available() > 0) {
@@ -852,10 +871,6 @@ class App {
         }
       }
     }
-    void halt() {
-      Serial.println("halting. Restart required.");
-      while (true) { ; }
-    }
   public:
     void setup() {
       Timer timer("setup()");
@@ -868,23 +883,9 @@ class App {
       // Utils::scanI2C();
       oledWrapper = new OLEDWrapper(false);
       oledWrapper->clear();
-      if (Utils::diagnosing) {
-        xmasDisplayer.maxVelocity = 100;
-        xmasDisplayer.minVelocity = 50;
-      }
     }
     void loop() {
-      if (Utils::diagnosing) {
-        if (xmasDisplayer.display(showOLED)) {
-          incrementVelocities();
-          if (xmasDisplayer.maxVelocity > 300) {
-            Serial.println("... Stopping.");
-            halt();
-          } 
-        }
-      } else {
-        xmasDisplayer.display(showOLED);
-      }
+      xmasDisplayer.doDisplay();
       checkSerial();
     }
 };
