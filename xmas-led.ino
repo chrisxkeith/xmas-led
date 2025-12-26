@@ -83,10 +83,10 @@ bool Utils::diagnosing = true;
 // 1 bit deep, e.g., monochrome
 class Bitmap {
   public:
-    int       width;
-    int       height;
+    size_t    width;
+    size_t    height;
     uint8_t*  bitmap;
-    Bitmap(int width, int height) {
+    Bitmap(size_t width, size_t height) {
       if (width % 8 != 0) {
         width = ((width / 8) + 1) * 8;
       }
@@ -101,10 +101,10 @@ class Bitmap {
     void clear() {
       std::memset(bitmap, 0b0000, sizeInBytes());
     }
-    int bitCount() {
-      int ret = 0;
-      for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
+    size_t bitCount() {
+      size_t ret = 0;
+      for (size_t y = 0; y < height; y++) {
+        for (size_t x = 0; x < width; x++) {
           if (getBit(x, y)) {
             ret++;
           }
@@ -112,46 +112,36 @@ class Bitmap {
       }
       return ret;
     }
-    int sizeInBytes() { return width * height / 8; }
-    int calcByteIndex(int x, int y) {
-      if (x < 0 || y < 0) {
-        String err("x=");
-        err.concat(x);
-        err.concat(", y=");
-        err.concat(y);
-        err.concat(" out of bounds (");
-        err.concat(width);
-        err.concat(",");
-        err.concat(height);
-        err.concat(")");
-        Serial.println(err);
+    size_t sizeInBytes() { return width * height / 8; }
+    void showError(size_t x, size_t y) {
+      String err("x=");
+      err.concat(x);
+      err.concat(", y=");
+      err.concat(y);
+      err.concat(" out of bounds (");
+      err.concat(width);
+      err.concat(",");
+      err.concat(height);
+      err.concat(")");
+      Serial.println(err);
+    }
+    size_t calcByteIndex(size_t x, size_t y) {
+      if (x >= width || y >= height) {
+        showError(x, y);
         return 0;
       }
-      int i = (x / 8) + (y * width / 8);
-      if (i >= sizeInBytes() * 8) {
-        String err("x=");
-        err.concat(x);
-        err.concat(", y=");
-        err.concat(y);
-        err.concat(" out of bounds (");
-        err.concat(width);
-        err.concat(",");
-        err.concat(height);
-        err.concat(")");
-        Serial.println(err);
-        return 1;
-      }
+      size_t i = (x / 8) + (y * width / 8);
       return i;
     }
-    void setBit(int x,  int y) {
-      int i = calcByteIndex(x, y);
+    void setBit(size_t x,  size_t y) {
+      size_t i = calcByteIndex(x, y);
       bitmap[i] |= (1 << (7 - (x % 8)));
     }
-    void clearBit(int x,  int y) {
-      int i = calcByteIndex(x, y);
+    void clearBit(size_t x,  size_t y) {
+      size_t i = calcByteIndex(x, y);
       bitmap[i] &= ~(1 << (7 - (x % 8)));
     }
-    int getBit(int x, int y) {
+    bool getBit(size_t x, size_t y) {
       byte b = bitmap[calcByteIndex(x, y)];
       bool bit = b >> (7 - (x % 8)) & 0x1;
       return bit;
@@ -216,7 +206,7 @@ Qwiic1in3OLED myOLED; // 128x64
 
 class OLEDWrapper {
   private:
-    const int SIZE_IN_BYTES = kOLED1in3Width * kOLED1in3Height / 8;
+    const size_t SIZE_IN_BYTES = kOLED1in3Width * kOLED1in3Height / 8;
     uint8_t*  oledBitmap = new uint8_t[SIZE_IN_BYTES];
 
   public:   
@@ -232,17 +222,23 @@ class OLEDWrapper {
       }
       clear();
     }
-   void setSuperPixelAt(int x, int y, bool on) {
-     int superPixelWidth = 4;
-     int superPixelHeight = 4;
-     for (int sx = 0; sx < superPixelWidth; sx++) {
-       for (int sy = 0; sy < superPixelHeight; sy++) {
-         int px = x * superPixelWidth + sx;
-         int py = y * superPixelHeight + sy;
+   void setSuperPixelAt(size_t x, size_t y, bool on) {
+     size_t superPixelWidth = 4;
+     size_t superPixelHeight = 4;
+     for (size_t sx = 0; sx < superPixelWidth; sx++) {
+       for (size_t sy = 0; sy < superPixelHeight; sy++) {
+         size_t px = x * superPixelWidth + sx;
+         size_t py = y * superPixelHeight + sy;
+         size_t byteIndex = px + (py / 8 * kOLED1in3Width);
+         if (byteIndex >= SIZE_IN_BYTES) {
+           Serial.print("setSuperPixelAt: byteIndex out of bounds: ");
+           Serial.println(byteIndex);
+           return;
+         }
          if (on) {
-           oledBitmap[px + (py / 8 * kOLED1in3Width)] |= (1 << (py % 8));
+           oledBitmap[byteIndex] |= (1 << (py % 8));
          } else {
-           oledBitmap[px + (py / 8 * kOLED1in3Width)] &= ~(1 << (py % 8));
+           oledBitmap[byteIndex] &= ~(1 << (py % 8));
          }
        }
      }
@@ -251,12 +247,10 @@ class OLEDWrapper {
    // Least-significant bit of first byte == (0,0).
    void bitmap(Bitmap *pBitmap) {
      std::memset(oledBitmap, 0b0000, SIZE_IN_BYTES);
-     for (int x = 0; x < pBitmap->width; x++) {
-       for (int y = 0; y < pBitmap->height; y++) {
+     for (size_t x = 0; x < pBitmap->width; x++) {
+       for (size_t y = 0; y < pBitmap->height; y++) {
          if (pBitmap->getBit(x, y)) {
            setSuperPixelAt(x, y, true);
-//            int   byteIndex = x + (y / 8 * kOLED1in3Width);
-//            oledBitmap[byteIndex] |= (1 << (y % 8));
           } 
         }
       }
