@@ -222,24 +222,27 @@ class OLEDWrapper {
       }
       clear();
     }
+    void setPixelAt(size_t x, size_t y, bool on) {
+      if (x >= kOLED1in3Width || y >= kOLED1in3Height) {
+        Serial.print("setPixelAt: x,y out of bounds: ");
+        Serial.print(x);
+        Serial.print(",");
+        Serial.println(y);
+        return;
+      }
+      size_t byteIndex = x + (y / 8 * kOLED1in3Width);
+      if (on) {
+        oledBitmap[byteIndex] |= (1 << (y % 8));
+      } else {
+        oledBitmap[byteIndex] &= ~(1 << (y % 8));
+      }
+    }
    void setSuperPixelAt(size_t x, size_t y, bool on) {
      size_t superPixelWidth = 4;
      size_t superPixelHeight = 4;
      for (size_t sx = 0; sx < superPixelWidth; sx++) {
        for (size_t sy = 0; sy < superPixelHeight; sy++) {
-         size_t px = x * superPixelWidth + sx;
-         size_t py = y * superPixelHeight + sy;
-         size_t byteIndex = px + (py / 8 * kOLED1in3Width);
-         if (byteIndex >= SIZE_IN_BYTES) {
-           Serial.print("setSuperPixelAt: byteIndex out of bounds: ");
-           Serial.println(byteIndex);
-           return;
-         }
-         if (on) {
-           oledBitmap[byteIndex] |= (1 << (py % 8));
-         } else {
-           oledBitmap[byteIndex] &= ~(1 << (py % 8));
-         }
+        setPixelAt(x * superPixelWidth + sx, y * superPixelHeight + sy, on);
        }
      }
    }
@@ -251,6 +254,17 @@ class OLEDWrapper {
        for (size_t y = 0; y < pBitmap->height; y++) {
          if (pBitmap->getBit(x, y)) {
            setSuperPixelAt(x, y, true);
+          } 
+        }
+      }
+      rawBitmap(oledBitmap, kOLED1in3Width, kOLED1in3Height);
+    }
+   void nativeBitmap(Bitmap *pBitmap) {
+     std::memset(oledBitmap, 0b0000, SIZE_IN_BYTES);
+     for (size_t x = 0; x < pBitmap->width; x++) {
+       for (size_t y = 0; y < pBitmap->height; y++) {
+         if (pBitmap->getBit(x, y)) {
+           setPixelAt(x, y, true);
           } 
         }
       }
@@ -744,7 +758,7 @@ class App {
     bool  showTextBitmap = false;
 
     String cmds = "runSpeedTest, "
-                    "runRampTest, runBitmapTest, "
+                    "runRampTest, runBitmapTest, oledPanelTest,"
                     "showOLED, showLEDStrip, showTextBitmap, "
                     "hideOLED, hideLEDStrip, hideTextBitmap, "
                     "clear, theDelay=[delayInMilliseconds], "
@@ -763,10 +777,13 @@ class App {
     void oledPanelTest() {
       Bitmap* b = new Bitmap(kOLED1in3Width, kOLED1in3Height);
       b->createDiagonals();
-      oledWrapper->bitmap(b);
+      oledWrapper->nativeBitmap(b);
       delay(3000);
       b->fill();
-      oledWrapper->bitmap(b);
+      oledWrapper->nativeBitmap(b);
+      delay(3000);
+      delete b;
+      oledWrapper->clear();
     }
     void incrementVelocities() {
       xmasDisplayer.maxVelocity += 20;
@@ -783,34 +800,36 @@ class App {
           LEDStripWrapper::rampTestBackward();
         } else if (teststr.equals("runBitmapTest")) {
           xmasDisplayer.bitmapTest(showOLED, showLEDStrip, showTextBitmap);
+        } else if (teststr.equals("oledPanelTest")) {
+          oledPanelTest();
         } else if (teststr.equals("clear")) {
           LEDStripWrapper::clear();
           oledWrapper->clear();
           xmasDisplayer.clear();
-        } else if (teststr.startsWith("theDelay=")) {
+        } else if (teststr.equals("theDelay=")) {
           LEDStripWrapper::setDelay(teststr);
-        } else if (teststr.startsWith("showOLED")) {
+        } else if (teststr.equals("showOLED")) {
           showOLED = true;
-        } else if (teststr.startsWith("showLEDStrip")) {
+        } else if (teststr.equals("showLEDStrip")) {
           showLEDStrip = true;
-        } else if (teststr.startsWith("showTextBitmap")) {
+        } else if (teststr.equals("showTextBitmap")) {
           showTextBitmap = true;
-        } else if (teststr.startsWith("hideOLED")) {
+        } else if (teststr.equals("hideOLED")) {
           showOLED = false;
           oledWrapper->clear();
-        } else if (teststr.startsWith("hideLEDStrip")) {
+        } else if (teststr.equals("hideLEDStrip")) {
           showLEDStrip = false;
           LEDStripWrapper::clear();
-        } else if (teststr.startsWith("hideTextBitmap")) {
+        } else if (teststr.equals("hideTextBitmap")) {
           showTextBitmap = false;
-        } else if (teststr.startsWith("showBuild")) {
+        } else if (teststr.equals("showBuild")) {
           showBuild();
-        } else if (teststr.startsWith("capacityTest")) {
+        } else if (teststr.equals("capacityTest")) {
           LEDStripWrapper::capacityTest();
-        } else if (teststr.startsWith("start")) {
+        } else if (teststr.equals("start")) {
           xmasDisplayer.show = true;
           xmasDisplayer.start(true);
-        } else if (teststr.startsWith("stop")) {
+        } else if (teststr.equals("stop")) {
           LEDStripWrapper::clear();
           oledWrapper->clear();
           xmasDisplayer.clear();
