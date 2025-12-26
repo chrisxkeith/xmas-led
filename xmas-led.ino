@@ -779,7 +779,15 @@ class App {
       b->createDiagonals();
       oledWrapper->nativeBitmap(b);
       delay(3000);
+      b->clear();
       b->fill();
+      oledWrapper->nativeBitmap(b);
+      delay(3000);
+      b->clear();
+      b->setBit(0, 0);
+      b->setBit(kOLED1in3Width - 1, 0);
+      b->setBit(kOLED1in3Width - 1, kOLED1in3Height - 1);
+      b->setBit(0, kOLED1in3Height - 1);
       oledWrapper->nativeBitmap(b);
       halt();
     }
