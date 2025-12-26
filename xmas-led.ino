@@ -205,10 +205,6 @@ class Bitmap {
 Qwiic1in3OLED myOLED; // 128x64
 
 class OLEDWrapper {
-  private:
-    const size_t SIZE_IN_BYTES = kOLED1in3Width * kOLED1in3Height / 8;
-    uint8_t*  oledBitmap = new uint8_t[SIZE_IN_BYTES];
-
   public:   
     OLEDWrapper(bool stopOnFail) {
       Wire.begin();
@@ -230,12 +226,7 @@ class OLEDWrapper {
         Serial.println(y);
         return;
       }
-      size_t byteIndex = x + (y / 8 * kOLED1in3Width);
-      if (on) {
-        oledBitmap[byteIndex] |= (1 << (y % 8));
-      } else {
-        oledBitmap[byteIndex] &= ~(1 << (y % 8));
-      }
+      myOLED.pixel(x, y, on ? COLOR_WHITE : COLOR_BLACK);
     }
    void setSuperPixelAt(size_t x, size_t y, bool on) {
      size_t superPixelWidth = 4;
@@ -246,10 +237,8 @@ class OLEDWrapper {
        }
      }
    }
-   // Must convert to OLED bitmap format: vertical bytes, left-to-right, top-to-bottom
-   // Least-significant bit of first byte == (0,0).
    void bitmap(Bitmap *pBitmap) {
-     std::memset(oledBitmap, 0b0000, SIZE_IN_BYTES);
+     myOLED.erase();
      for (size_t x = 0; x < pBitmap->width; x++) {
        for (size_t y = 0; y < pBitmap->height; y++) {
          if (pBitmap->getBit(x, y)) {
@@ -257,10 +246,9 @@ class OLEDWrapper {
           } 
         }
       }
-      rawBitmap();
+      myOLED.display();
     }
    void nativeBitmap(Bitmap *pBitmap) {
-     std::memset(oledBitmap, 0b0000, SIZE_IN_BYTES);
      for (size_t x = 0; x < pBitmap->width; x++) {
        for (size_t y = 0; y < pBitmap->height; y++) {
          if (pBitmap->getBit(x, y)) {
@@ -268,7 +256,7 @@ class OLEDWrapper {
           } 
         }
       }
-      rawBitmap();
+      myOLED.display();
     }
     void clear() {
       myOLED.erase();
@@ -279,11 +267,6 @@ class OLEDWrapper {
       myOLED.text(x, y, s.c_str(), COLOR_WHITE);
     }
     void endDisplay() {
-      myOLED.display();
-    }
-    void rawBitmap() {
-      myOLED.erase();
-      myOLED.bitmap(0, 0, oledBitmap, kOLED1in3Width, kOLED1in3Height);
       myOLED.display();
     }
     void nativePixelTest() {
@@ -785,6 +768,7 @@ class App {
     void oledPanelTest() {
       Bitmap* b = new Bitmap(kOLED1in3Width, kOLED1in3Height);
       b->createDiagonals();
+      oledWrapper->clear();
       oledWrapper->nativeBitmap(b);
       delay(3000);
       b->clear();
@@ -803,7 +787,7 @@ class App {
       oledWrapper->setPixelAt(kOLED1in3Width - 1, 0, true);
       oledWrapper->setPixelAt(kOLED1in3Width - 1, kOLED1in3Height - 1, true);
       oledWrapper->setPixelAt(0, kOLED1in3Height - 1, true);
-      oledWrapper->rawBitmap();
+      oledWrapper->endDisplay();
       delay(3000);
       oledWrapper->clear();
       oledWrapper->nativePixelTest();
