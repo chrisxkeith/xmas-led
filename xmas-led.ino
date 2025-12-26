@@ -781,9 +781,7 @@ class App {
       delay(3000);
       b->fill();
       oledWrapper->nativeBitmap(b);
-      delay(3000);
-      delete b;
-      oledWrapper->clear();
+      halt();
     }
     void incrementVelocities() {
       xmasDisplayer.maxVelocity += 20;
@@ -843,6 +841,10 @@ class App {
         }
       }
     }
+    void halt() {
+      Serial.println("halting. Restart required.");
+      while (true) { ; }
+    }
   public:
     void setup() {
       Timer timer("setup()");
@@ -866,7 +868,7 @@ class App {
           incrementVelocities();
           if (xmasDisplayer.maxVelocity > 300) {
             Serial.println("... Stopping.");
-            while (true) { ; }
+            halt();
           } 
         }
       } else {
