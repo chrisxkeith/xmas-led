@@ -764,6 +764,7 @@ class App {
       oledWrapper->clear();
       oledWrapper->addText(0, 0, configs[0]);
       oledWrapper->endDisplay();
+      delay(5000);
     }
     void oledPanelTest() {
       Bitmap* b = new Bitmap(kOLED1in3Width, kOLED1in3Height);
