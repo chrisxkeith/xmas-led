@@ -286,6 +286,14 @@ class OLEDWrapper {
       myOLED.bitmap(0, 0, oledBitmap, kOLED1in3Width, kOLED1in3Height);
       myOLED.display();
     }
+    void nativePixelTest() {
+      myOLED.erase();
+      myOLED.pixel(0, 0, COLOR_WHITE);
+      myOLED.pixel(kOLED1in3Width - 1, 0, COLOR_WHITE);
+      myOLED.pixel(kOLED1in3Width - 1, kOLED1in3Height - 1, COLOR_WHITE);
+      myOLED.pixel(0, kOLED1in3Height - 1, COLOR_WHITE);
+      myOLED.display();
+    } 
 };
 OLEDWrapper* oledWrapper = nullptr;
 
@@ -796,6 +804,9 @@ class App {
       oledWrapper->setPixelAt(kOLED1in3Width - 1, kOLED1in3Height - 1, true);
       oledWrapper->setPixelAt(0, kOLED1in3Height - 1, true);
       oledWrapper->rawBitmap();
+      delay(3000);
+      oledWrapper->clear();
+      oledWrapper->nativePixelTest();
       halt();
     }
     void incrementVelocities() {
