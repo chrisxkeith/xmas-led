@@ -257,7 +257,7 @@ class OLEDWrapper {
           } 
         }
       }
-      rawBitmap(oledBitmap, kOLED1in3Width, kOLED1in3Height);
+      rawBitmap();
     }
    void nativeBitmap(Bitmap *pBitmap) {
      std::memset(oledBitmap, 0b0000, SIZE_IN_BYTES);
@@ -268,7 +268,7 @@ class OLEDWrapper {
           } 
         }
       }
-      rawBitmap(oledBitmap, kOLED1in3Width, kOLED1in3Height);
+      rawBitmap();
     }
     void clear() {
       myOLED.erase();
@@ -281,9 +281,9 @@ class OLEDWrapper {
     void endDisplay() {
       myOLED.display();
     }
-    void rawBitmap(uint8_t *pBitmap, uint8_t width, uint8_t height) {
+    void rawBitmap() {
       myOLED.erase();
-      myOLED.bitmap(0, 0, pBitmap, width, height);
+      myOLED.bitmap(0, 0, oledBitmap, kOLED1in3Width, kOLED1in3Height);
       myOLED.display();
     }
 };
@@ -789,6 +789,13 @@ class App {
       b->setBit(kOLED1in3Width - 1, kOLED1in3Height - 1);
       b->setBit(0, kOLED1in3Height - 1);
       oledWrapper->nativeBitmap(b);
+      delay(3000);
+      oledWrapper->clear();
+      oledWrapper->setPixelAt(0, 0, true);
+      oledWrapper->setPixelAt(kOLED1in3Width - 1, 0, true);
+      oledWrapper->setPixelAt(kOLED1in3Width - 1, kOLED1in3Height - 1, true);
+      oledWrapper->setPixelAt(0, kOLED1in3Height - 1, true);
+      oledWrapper->rawBitmap();
       halt();
     }
     void incrementVelocities() {
