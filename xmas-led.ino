@@ -751,7 +751,7 @@ class App {
                     "showBuild, capacityTest, start, stop, "
                     "dump, continue";
     String configs[2] = {
-      "~2025Dec05:11:15", // date +"%Y%b%d:%H:%M"
+      "~2025Dec26:09:42", // date +"%Y%b%d:%H:%M"
       "https://github.com/chrisxkeith/xmas-led",
     };
 
