@@ -26,6 +26,20 @@ class Utils {
     const static int RAND_INCREMENT = 37;
   public:
     static bool diagnosing;
+
+    static void doWait(String s) {
+      if (diagnosing) {
+        Serial.print(s);
+        Serial.println(": Waiting for user input. Type any character and press Enter to continue...");
+        while (Serial.available() == 0) {
+          ; // wait for input
+        }
+        while (Serial.available() > 0) {
+          Serial.read(); // clear input buffer
+        }
+      }
+    }
+
     // Modified from https://playground.arduino.cc/Main/I2cScanner/
     static void scanI2C() {
       Timer t("scanI2C()");
@@ -528,7 +542,7 @@ class XmasDisplayer {
       s.concat(snowStateName(ss));
       s.concat(", bitmap->bitCount(): ");
       s.concat(bitmap->bitCount());
-      // Serial.println(s);
+      Utils::doWait(s);
       snowState = ss;
     }
     void checkState(String s) {
