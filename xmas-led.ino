@@ -97,6 +97,7 @@ int Utils::lastRand = 0;
 bool Utils::diagnosing = true;
 
 #include <cstring> // for memset()
+#include <climits>
 // Horizontal bytes, left-to-right, top-to-bottom.
 // Most-significant bit of first byte == (0,0).
 // 1 bit deep, e.g., monochrome
@@ -132,8 +133,9 @@ class Bitmap {
       return ret;
     }
     size_t sizeInBytes() { return width * height / 8; }
-    void showError(size_t x, size_t y) {
-      String err("x=");
+    void showError(String s, size_t x, size_t y) {
+      String err(s);
+      err.concat(", x=");
       err.concat(x);
       err.concat(", y=");
       err.concat(y);
@@ -144,26 +146,36 @@ class Bitmap {
       err.concat(")");
       Serial.println(err);
     }
-    size_t calcByteIndex(size_t x, size_t y) {
+    size_t calcByteIndex(String func, size_t x, size_t y) {
       if (x >= width || y >= height) {
-        showError(x, y);
-        return 0;
+        String err(func);
+        err.concat(": calcByteIndex");
+        showError(err, x, y);
+        return INT_MAX;
       }
       size_t i = (x / 8) + (y * width / 8);
       return i;
     }
     void setBit(size_t x,  size_t y) {
-      size_t i = calcByteIndex(x, y);
-      bitmap[i] |= (1 << (7 - (x % 8)));
+      size_t i = calcByteIndex("setBit", x, y);
+      if (i != INT_MAX) {
+        bitmap[i] |= (1 << (7 - (x % 8)));
+      }
     }
     void clearBit(size_t x,  size_t y) {
-      size_t i = calcByteIndex(x, y);
-      bitmap[i] &= ~(1 << (7 - (x % 8)));
+      size_t i = calcByteIndex("clearBit", x, y);
+      if (i != INT_MAX) {
+        bitmap[i] &= ~(1 << (7 - (x % 8)));
+      }
     }
     bool getBit(size_t x, size_t y) {
-      byte b = bitmap[calcByteIndex(x, y)];
-      bool bit = b >> (7 - (x % 8)) & 0x1;
-      return bit;
+      size_t i = calcByteIndex("getBit", x, y);
+      if (i != INT_MAX) {
+        byte b = bitmap[i];
+        bool bit = b >> (7 - (x % 8)) & 0x1;
+        return bit;
+      }
+      return false;
     }
     void dump(String title) {
       dump(title, 0, height);
@@ -655,54 +667,58 @@ class XmasDisplayer {
       Serial.println(m);
       String s("Active Snowflakes: ");
     }
-    void snow(unsigned long now) {
+    void stopSnow(unsigned long now) {
+      for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
+        bitmap->clearBit(it->currentX, it->currentY);
+        it = snowflakes.erase(it);
+        if (snowflakes.size() == 0) {
+          changeState(melting);
+          delay(BETWEEN_STATE_WAIT);
+          lastMeltTime = millis();
+        }
+      }
+    }
+    void doSnow(unsigned long now) {
       for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
         if (now > it->lastRedraw + it->velocityInMS) {
           if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
             bitmap->clearBit(it->currentX, it->currentY);
             it->lastRedraw = now;
           }
-          if (snowState == stopping) {
-            it = snowflakes.erase(it);
-            if (it == snowflakes.end()) {
-              break;
+          it->currentY++;
+          if (it->currentY > snowLevel[it->currentX] - 1) {
+            if (snowLevel[it->currentX] < MAX_SNOW_HEIGHT_COORD) {
+              continue;
             }
-          } else {
-            it->currentY++;
-            if (it->currentY > snowLevel[it->currentX] - 1) {
-              if (snowLevel[it->currentX] < MAX_SNOW_HEIGHT_COORD) {
-                continue;
-              }
-              snowLevel[it->currentX]--;
-              it->currentY = -1;
-              it->velocityInMS = calculateVelocity();
-            }
-            if (it->currentY >= 0) {
-              bitmap->setBit(it->currentX, it->currentY);
-              it->lastRedraw = now;
-            }
+            snowLevel[it->currentX]--;
+            it->currentY = -1;
+            it->velocityInMS = calculateVelocity();
+          }
+          if (it->currentY >= 0) {
+            bitmap->setBit(it->currentX, it->currentY);
+            it->lastRedraw = now;
           }
         }
       }
-      if (snowState == snowing) {
-        //  Look at snowLevel to see if we're all done snowing?
-        SnowState nextState = stopping;
-        for (int i = 0; i < WIDTH; i++) {
-          if (snowLevel[i] > MAX_SNOW_HEIGHT_COORD) {
-            nextState = snowing;
-            break;
-          }
+      if (now > lastAddedTime + 100) {
+        if (snowflakes.size() < WIDTH) {
+            snowflakes.push_back(createSnowflake());
+            lastAddedTime = now;
         }
-        if (nextState == stopping) {
-          changeState(stopping);
-          return;
+      }
+    }    
+    void snowOnly(unsigned long now) {
+      doSnow(now);
+      SnowState nextState = stopping;
+      for (int i = 0; i < WIDTH; i++) {
+        if (snowLevel[i] > MAX_SNOW_HEIGHT_COORD) {
+          nextState = snowing;
+          break;
         }
-        if (now > lastAddedTime + 100) {
-          if (snowflakes.size() < WIDTH) {
-              snowflakes.push_back(createSnowflake());
-              lastAddedTime = now;
-          }
-        }
+      }
+      if (nextState == stopping) {
+        changeState(stopping);
+        return;
       }
     }
     bool display(bool showOLED) {
@@ -710,20 +726,9 @@ class XmasDisplayer {
       if (show) {
         unsigned long now = millis();
         switch (snowState) {
-          case snowing:
-            snow(now);
-            break;
-          case stopping:
-            snow(now);
-            if (snowflakes.size() == 0) {
-              changeState(melting);
-              delay(BETWEEN_STATE_WAIT);
-              lastMeltTime = millis();
-            }
-            break;
-          case melting:
-            melt(now);
-            break;
+          case snowing:  snowOnly(now); break;
+          case stopping: stopSnow(now);break;
+          case melting:  melt(now); break;
         }
         LEDStripWrapper::showBitmap(bitmap);
         if (showOLED) {
