@@ -718,7 +718,11 @@ class XmasDisplayer {
       }
       if (nextState == stopping) {
         changeState(stopping);
-        return;
+        for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
+          if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
+            bitmap->clearBit(it->currentX, it->currentY);
+          }
+        }
       }
     }
     bool display(bool showOLED) {
