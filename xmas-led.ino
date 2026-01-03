@@ -146,9 +146,11 @@ class Bitmap {
       err.concat(")");
       Serial.println(err);
     }
-    size_t calcByteIndex(String func, size_t x, size_t y) {
+    size_t calcByteIndex(String func, String caller, size_t x, size_t y) {
       if (x >= width || y >= height) {
         String err(func);
+        err.concat(" called from ");
+        err.concat(caller);
         err.concat(": calcByteIndex");
         showError(err, x, y);
         return INT_MAX;
@@ -157,19 +159,19 @@ class Bitmap {
       return i;
     }
     void setBit(size_t x,  size_t y) {
-      size_t i = calcByteIndex("setBit", x, y);
+      size_t i = calcByteIndex("setBit", "", x, y);
       if (i != INT_MAX) {
         bitmap[i] |= (1 << (7 - (x % 8)));
       }
     }
-    void clearBit(size_t x,  size_t y) {
-      size_t i = calcByteIndex("clearBit", x, y);
+    void clearBit(size_t x,  size_t y, String caller) {
+      size_t i = calcByteIndex("clearBit", caller, x, y);
       if (i != INT_MAX) {
         bitmap[i] &= ~(1 << (7 - (x % 8)));
       }
     }
     bool getBit(size_t x, size_t y) {
-      size_t i = calcByteIndex("getBit", x, y);
+      size_t i = calcByteIndex("getBit", "", x, y);
       if (i != INT_MAX) {
         byte b = bitmap[i];
         bool bit = b >> (7 - (x % 8)) & 0x1;
@@ -495,6 +497,7 @@ class RandomDistributor {
           reset();
         } else {
           String err("RandomDistributor: called too many times");
+          Serial.println(err);
           return Utils::myRand() % N_COORDS;
         }
       }
@@ -645,7 +648,7 @@ class XmasDisplayer {
       if (now > lastMeltTime + 100) {
         int xx = meltDistributor.getNextCoord();
         if (snowLevel[xx] < HEIGHT) {
-          bitmap->clearBit(xx, snowLevel[xx]++);
+          bitmap->clearBit(xx, snowLevel[xx]++, "melt");
           lastMeltTime = millis();
         }
       }
@@ -669,7 +672,7 @@ class XmasDisplayer {
     }
     void stopSnow(unsigned long now) {
       for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
-        bitmap->clearBit(it->currentX, it->currentY);
+        bitmap->clearBit(it->currentX, it->currentY, "stopSnow");
         it = snowflakes.erase(it);
         if (snowflakes.size() == 0) {
           changeState(melting);
@@ -682,7 +685,7 @@ class XmasDisplayer {
       for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
         if (now > it->lastRedraw + it->velocityInMS) {
           if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
-            bitmap->clearBit(it->currentX, it->currentY);
+            bitmap->clearBit(it->currentX, it->currentY, "doSnow");
             it->lastRedraw = now;
           }
           it->currentY++;
@@ -720,7 +723,7 @@ class XmasDisplayer {
         changeState(stopping);
         for (std::vector<Snowflake>::iterator it = snowflakes.begin(); it != snowflakes.end(); ++it) {
           if (it->currentY > -1 && it->currentY < snowLevel[it->currentX] - 1) {
-            bitmap->clearBit(it->currentX, it->currentY);
+            bitmap->clearBit(it->currentX, it->currentY, "snowOnly");
           }
         }
       }
